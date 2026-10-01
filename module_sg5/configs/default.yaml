@@ -1,0 +1,14 @@
+# SG-5 Drowsiness Decision & Alert Logic -- baseline config.
+# This module owns risk R6 (false alerts make the driver switch the system off),
+# so every value here trades missed detections against nuisance alarms. Justify
+# each one with a measured false-alarm rate, not intuition.
+
+warn_on:  0.45      # rising  -> WARN
+alert_on: 0.70      # rising  -> ALERT
+warn_off: 0.35      # falling -> leave WARN
+alert_off: 0.55     # falling -> leave ALERT  (gap vs alert_on = the hysteresis)
+
+min_dwell_s: 0.40        # a state must persist this long before it is adopted
+alert_latch_s: 1.50      # once ALERT fires, hold it at least this long
+closure_override_s: 1.20 # eyes shut this long -> ALERT immediately, ignore the score
+min_confidence: 0.50     # below this upstream coverage, refuse to escalate

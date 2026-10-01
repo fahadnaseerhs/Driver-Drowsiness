@@ -1,0 +1,14 @@
+# SG-4 Temporal Behaviour Analysis -- baseline config (PERCLOS + sliding window).
+
+window_s: 3.0             # sliding window length
+fps_hint: 30.0            # used only to size the buffer, not to measure time
+min_valid_fraction: 0.5   # below this share of usable frames, refuse to decide
+
+# drowsy_score fusion. Each term saturates at 1.0 at its reference level.
+# Taken from the Figma plan as a STARTING POINT -- Labs 5-7 owe a sensitivity study.
+w_perclos: 0.60
+w_closure: 0.30
+w_yawn: 0.10
+perclos_ref: 0.40         # PERCLOS of 0.40 makes that term 1.0
+closure_ref_s: 1.50       # a 1.5 s closure makes that term 1.0
+yawn_ref_events: 1.0      # one yawn in the window makes that term 1.0

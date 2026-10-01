@@ -1,0 +1,90 @@
+name: CI
+
+# What this enforces, and why it exists:
+#
+#  * Risk R3 is "interface drift after the contract freeze", mitigated by a
+#    "schema check in CI; pull request blocks on a diff". That is the
+#    contract-check job below -- it is the mechanism, not a formality.
+#  * The pipeline job proves the whole chain still runs on the mock driver. Any
+#    sub-group can break integration from inside their own module; this catches
+#    it on the pull request instead of at Lab 8.
+#
+# Deliberately NO model downloads, NO camera, NO Jetson. CI must stay runnable on
+# every push from week one, which means it tests everything except SG-1's model.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.10 is the Jetson/JetPack target. 3.12 catches anything that would
+        # break a teammate on a newer local install.
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install the light dependency set
+        # Not requirements.txt: mediapipe and opencv are heavy and SG-1 is the
+        # only module that needs them. Everything else must be testable without.
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov ruff PyYAML jsonschema numpy
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Regenerate the mock data and fail if it differs from what is committed
+        # If this fails, somebody changed a contract or a labelling rule without
+        # regenerating the mocks, so the committed reference data is now a lie.
+        run: |
+          python interfaces/mock/generate_mocks.py
+          git diff --exit-code -- interfaces/mock/ || {
+            echo "::error::Committed mock data does not match generate_mocks.py output."
+            echo "Run: python interfaces/mock/generate_mocks.py  and commit the result."
+            exit 1
+          }
+
+      - name: Contract and unit tests
+        run: |
+          pytest -q \
+            --cov=interfaces --cov=module_sg2 --cov=module_sg3 \
+            --cov=module_sg4 --cov=module_sg5 --cov=integration \
+            --cov-report=term-missing
+
+      - name: End-to-end pipeline on the mock driver
+        # Exits non-zero on any contract violation, a missed alarm during the
+        # scripted closure, or a false alarm while the driver is awake.
+        run: python integration/run_pipeline.py --source mock --check-scenario
+
+  contract-check:
+    # Runs on pull requests only. Changing interfaces/contracts.py after the Lab 3
+    # freeze needs team agreement and a SCHEMA_VERSION bump -- see
+    # documentation/interface_change_policy.md.
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Flag any change to the frozen contracts
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD \
+               | grep -q '^interfaces/contracts.py$'; then
+            echo "::warning title=Frozen interface touched::This PR modifies interfaces/contracts.py. It needs team-level agreement, a SCHEMA_VERSION bump, regenerated mocks, and a note in documentation/interface_change_policy.md."
+            git diff origin/${{ github.base_ref }}...HEAD -- interfaces/contracts.py
+          else
+            echo "contracts.py untouched"
+          fi

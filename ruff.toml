@@ -1,0 +1,12 @@
+line-length = 100
+target-version = "py310"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "W"]
+ignore = [
+    "E501",   # line length -- line-length above already handles it
+    "UP038",  # isinstance(x, (int, float)) reads better than isinstance(x, int | float)
+]
+
+[lint.per-file-ignores]
+"**/tests/*" = ["B011"]

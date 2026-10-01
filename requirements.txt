@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# G2-D1 Driver Drowsiness Monitoring -- development (x86 PC) dependencies
+# Python 3.10 (matches the Jetson Orin Nano / JetPack target).
+#
+#   python -m venv .venv
+#   .venv\Scripts\activate          (Windows)   |   source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# Jetson does NOT use this file -- see embedded_sg6/requirements-jetson.txt.
+# Pinned minor versions: reproducibility is graded (Interface Compliance, 15%).
+# ---------------------------------------------------------------------------
+
+numpy==1.26.4            # pinned <2.0: MediaPipe + JetPack OpenCV are not numpy-2 safe
+opencv-python==4.10.0.84
+mediapipe==0.10.14       # SG-1 baseline: FaceMesh (468 pts, incl. 68-pt subset)
+scipy==1.14.1            # SG-2/SG-4 signal work (filtering, peak finding)
+PyYAML==6.0.2            # module configs
+jsonschema==4.23.0       # interface contract validation (Lab 3 gate / CI)
+pandas==2.2.3            # evaluation tables
+matplotlib==3.9.2        # evaluation plots
+tqdm==4.66.5

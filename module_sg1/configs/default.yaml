@@ -1,0 +1,8 @@
+# SG-1 Driver Face & Landmark Detection -- baseline config (MediaPipe FaceMesh).
+# Every number here is a hypothesis, not a fact. Labs 5-6 are where you vary them
+# and record what changed in results/metrics.json.
+
+min_detection_confidence: 0.5   # below this, no face is reported at all
+min_tracking_confidence: 0.5    # below this, tracking is dropped and detection re-runs
+refine_landmarks: true          # FaceMesh iris refinement; costs FPS, helps eye accuracy
+roi_padding: 0.15               # grow eye/mouth ROIs by this fraction of their own size

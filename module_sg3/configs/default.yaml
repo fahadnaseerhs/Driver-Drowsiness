@@ -1,0 +1,6 @@
+# SG-3 Yawn & Facial-Cue Analysis -- baseline config (Mouth Aspect Ratio).
+
+mar_threshold: 0.45       # above this the mouth counts as wide open
+hysteresis: 0.05
+min_yawn_s: 0.80          # a yawn is sustained; this is what separates it from talking
+max_yawn_s: 10.0          # longer than this is a tracking failure, not a yawn

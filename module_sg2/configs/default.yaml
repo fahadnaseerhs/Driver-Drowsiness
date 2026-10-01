@@ -1,0 +1,8 @@
+# SG-2 Eye State & Blink Analysis -- baseline config (Eye Aspect Ratio).
+
+ear_threshold: 0.21        # below this the eye counts as closed
+hysteresis: 0.02           # must rise above threshold+h to re-open (stops chattering)
+min_blink_s: 0.06          # shorter than this is landmark jitter, not a blink
+max_blink_s: 0.50          # longer than this is a closure, not a blink
+normalise_by_baseline: false   # per-driver EAR normalisation; enable only with evidence
+baseline_alpha: 0.01           # how fast the open-eye baseline adapts when enabled

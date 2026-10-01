@@ -1,0 +1,3 @@
+# Optional JSON Schema exports of interfaces/contracts.py.
+# contracts.py is the source of truth; generate from it if you need schemas
+# for a non-Python consumer. Do not maintain schemas by hand -- they will drift.

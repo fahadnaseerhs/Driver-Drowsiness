@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------------------
+# SG-6: Jetson Orin Nano 8GB dependencies. NOT the same list as the PC.
+#
+#     pip3 install -r embedded_sg6/requirements-jetson.txt
+#
+# DO NOT pip install opencv-python or numpy on the Jetson. JetPack ships both,
+# built against CUDA and GStreamer, and pip will shadow them with slower
+# CPU-only builds. Check what is already there before installing anything:
+#
+#     python3 -c "import cv2; print(cv2.__version__, cv2.cuda.getCudaEnabledDeviceCount())"
+#     python3 -c "import numpy; print(numpy.__version__)"
+#
+# Record the exact JetPack version in embedded_sg6/README.md. Risk R7 is
+# "camera or capture pipeline unstable on Jetson" and its mitigation is pinning
+# that version -- which only works if somebody writes it down.
+# ---------------------------------------------------------------------------
+
+# Provided by JetPack. Listed for the record; do NOT install via pip:
+#   numpy
+#   opencv-python   (with CUDA + GStreamer)
+#   tensorrt
+#   pycuda
+
+PyYAML==6.0.2
+jsonschema==4.23.0
+tqdm==4.66.5
+
+# MediaPipe on aarch64 is the known-awkward dependency, and it is on SG-1's
+# critical path. Options in order of preference:
+#   1. a prebuilt aarch64 wheel matching your JetPack/Python combination
+#   2. build from source (slow, several hours, needs disk headroom)
+#   3. drop MediaPipe and deploy SG-1's comparison path (RetinaFace + PFLD)
+#      through TensorRT instead
+# Decide this at Lab 9, not Lab 11. If it slips to Lab 11 it becomes the thing
+# that stops Integration Gate 2.
+# mediapipe==0.10.14

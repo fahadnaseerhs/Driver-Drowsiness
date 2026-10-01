@@ -1,0 +1,63 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- Environments (never commit; use requirements.txt) ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Datasets and models: NEVER commit raw data or weights ----
+# Commit manifests + download scripts instead (see datasets/README.md).
+datasets/raw/
+datasets/processed/
+datasets/clips/
+datasets/**/*.mp4
+datasets/**/*.avi
+datasets/**/*.mov
+datasets/**/*.mkv
+datasets/**/*.zip
+datasets/**/*.tar.gz
+!datasets/samples/.gitkeep
+models/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.plan
+*.trt
+*.tflite
+*.caffemodel
+*.weights
+*.h5
+
+# ---- Module outputs: keep committed metrics, drop bulky artefacts ----
+**/results/**/*.mp4
+**/results/**/*.npy
+**/results/**/*.npz
+**/results/**/*.pkl
+**/profiling/**/*.nsys-rep
+**/profiling/**/*.qdrep
+*.log
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Stray Obsidian vault that shipped with this folder ----
+Driver Drowsiness/

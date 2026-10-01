@@ -1,0 +1,90 @@
+{
+ "description": "Scripted 10 s driver-drowsiness scenario, 300 frames @ 30 FPS.",
+ "fps": 30,
+ "n_frames": 300,
+ "frame_size": [
+  1280,
+  720
+ ],
+ "ground_truth": {
+  "eyes_closed_s": [
+   [
+    0.7,
+    0.82
+   ],
+   [
+    1.6,
+    1.72
+   ],
+   [
+    2.8,
+    2.92
+   ],
+   [
+    4.4,
+    4.54
+   ],
+   [
+    5.2,
+    7.0
+   ],
+   [
+    7.25,
+    7.6
+   ],
+   [
+    7.75,
+    7.98
+   ]
+  ],
+  "yawn_s": [
+   [
+    2.2,
+    3.4
+   ]
+  ],
+  "no_face_s": [
+   [
+    8.0,
+    9.0
+   ]
+  ]
+ },
+ "target_behaviour": {
+  "alert_s": [
+   [
+    6.2,
+    8.0
+   ]
+  ],
+  "states": {
+   "OK": [
+    [
+     0.0,
+     5.2
+    ],
+    [
+     9.3,
+     10.0
+    ]
+   ],
+   "WARN": [
+    [
+     5.2,
+     6.2
+    ]
+   ],
+   "ALERT": [
+    [
+     6.2,
+     8.0
+    ]
+   ]
+  }
+ },
+ "thresholds_used_to_label": {
+  "ear": 0.21,
+  "mar": 0.45
+ },
+ "note": "Synthetic geometry for interface and unit tests. Accuracy figures that get graded must come from real clips -- see datasets/README.md."
+}
