@@ -60,5 +60,6 @@ models/
 Thumbs.db
 desktop.ini
 
-# ---- Stray Obsidian vault that shipped with this folder ----
-Driver Drowsiness/
+# ---- Obsidian vault (project planning + Researcher/Coder working notes) ----
+# Track the notes; ignore only Obsidian's per-user app-config cache.
+Driver Drowsiness/.obsidian/
