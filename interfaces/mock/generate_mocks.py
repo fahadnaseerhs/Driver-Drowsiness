@@ -337,7 +337,13 @@ def build_temporal_sequence(eyes: list[EyeResult], yawns: list[YawnResult],
         blinks = sum(1 for e in e_win if e.blink_event)
         yawn_events = sum(1 for y in y_win if y.yawn_event)
         longest = max((e.closure_duration_s for e in e_win), default=0.0)
-        avg_ear = sum(e.ear for e in e_win if e.ear is not None) / len(e_win)
+        # Each ear is already a 4-dp value, so sum them as exact integers
+        # (tenths-of-thousandths) before dividing. A float sum of 90 values can
+        # land 1 ULP apart on Linux vs Windows, which flips round() when the mean
+        # sits on a 4-dp tie (e.g. 0.26465) and breaks the byte-identical mock
+        # guarantee the CI check enforces. Integer addition is platform-identical.
+        ear_milli = sum(round(e.ear * 10000) for e in e_win if e.ear is not None)
+        avg_ear = ear_milli / len(e_win) / 10000.0
 
         # Baseline fusion: PERCLOS dominates, sustained closure is decisive,
         # yawning contributes a smaller amount. SG-4/SG-5 must revisit these
