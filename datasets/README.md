@@ -100,6 +100,33 @@ without the files themselves:
 episodes a correct system must alarm on. It is not the same as every eye closure: a
 normal blink is a closure and must **not** produce an alarm.
 
+## Running the evaluation harness
+
+`evaluation/run_eval.py` runs the pipeline on the clips in a manifest and scores the
+ALERT track against each clip's `drowsy_episodes_s`, using the shared metrics in
+`evaluation/src/metrics.py`. It writes one JSON report — per-clip plus a pooled
+aggregate — with recall, precision, F1, false-alarms-per-hour and alert latency.
+
+```bash
+# Runs today with no real clips: replays interfaces/mock (methodology only).
+python evaluation/run_eval.py --manifest datasets/manifests/sample_mock.json
+
+# A real test set, writing the table into a sub-group's results/ folder.
+python evaluation/run_eval.py --manifest datasets/manifests/<name>.json \
+    --out module_sg5/results/<name>_eval.json
+```
+
+**Swapping in real clips:** drop the videos under `datasets/clips/...` (gitignored),
+add a manifest listing each clip's path + ground truth (format above), and point
+`--manifest` at it. A clip with `"file": "mock"` replays the synthetic sample; any other
+value is a path to a real video run through the full SG-1→SG-5 pipeline. A clip named in
+a manifest but absent on this machine is skipped (and reported), so the harness still
+runs before the gitignored real data is present.
+
+Runs on synthetic input are flagged `graded_accuracy: false` in the report. **No graded
+accuracy figure may come from the mock** — the sample proves the methodology works, not
+the numbers.
+
 ## Splits, and risk R5
 
 Risk **R5** is *"thresholds overfit to the recorded clips"*, mitigated by *"hold-out

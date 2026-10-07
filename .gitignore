@@ -22,7 +22,7 @@ ENV/
 # Commit manifests + download scripts instead (see datasets/README.md).
 datasets/raw/
 datasets/processed/
-datasets/clips/
+datasets/clips/*
 datasets/**/*.mp4
 datasets/**/*.avi
 datasets/**/*.mov
@@ -30,6 +30,7 @@ datasets/**/*.mkv
 datasets/**/*.zip
 datasets/**/*.tar.gz
 !datasets/samples/.gitkeep
+!datasets/clips/.gitkeep
 models/
 *.pt
 *.pth

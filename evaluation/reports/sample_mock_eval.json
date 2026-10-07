@@ -1,0 +1,60 @@
+{
+ "manifest": "sample_mock",
+ "manifest_file": "datasets/manifests/sample_mock.json",
+ "split": "sample",
+ "git_commit": "8c9c079",
+ "platform": "Windows-11-10.0.28020-SP0",
+ "tolerance_s": 1.0,
+ "max_gap_s": 0.2,
+ "config": "each module's configs/default.yaml",
+ "graded_accuracy": false,
+ "note": "Synthetic/sample input: proves the methodology runs end to end, NOT accuracy. No graded figure may come from the mock (datasets/README.md).",
+ "per_clip": [
+  {
+   "file": "mock",
+   "synthetic": true,
+   "subject": "synthetic",
+   "glasses": false,
+   "lighting": "synthetic",
+   "module_errors": {},
+   "contract_violations": 0,
+   "true_positives": 1,
+   "false_negatives": 0,
+   "false_positives": 0,
+   "recall": 1.0,
+   "precision": 1.0,
+   "f1": 1.0,
+   "mean_alert_latency_s": 1.0,
+   "max_alert_latency_s": 1.0,
+   "frames": 300,
+   "duration_s": 9.967,
+   "drowsy_episodes": [
+    [
+     5.2,
+     7.0
+    ]
+   ],
+   "alarm_intervals": [
+    [
+     6.2,
+     9.967
+    ]
+   ],
+   "false_alarms_per_hour": 0.0,
+   "proc_latency_ms_mean": 0.133,
+   "proc_latency_ms_max": 0.355
+  }
+ ],
+ "aggregate": {
+  "clips": 1,
+  "true_positives": 1,
+  "false_negatives": 0,
+  "false_positives": 0,
+  "recall": 1.0,
+  "precision": 1.0,
+  "f1": 1.0,
+  "total_duration_s": 9.967,
+  "false_alarms_per_hour": 0.0
+ },
+ "skipped": []
+}

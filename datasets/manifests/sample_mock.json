@@ -1,0 +1,22 @@
+{
+ "name": "sample_mock",
+ "split": "sample",
+ "created": "2026-10-08",
+ "source": "synthetic (interfaces/mock) -- methodology sample ONLY",
+ "camera": "n/a (synthetic landmarks, no pixels)",
+ "notes": "Runnable with nothing installed: replays interfaces/mock through SG-2..SG-5 so the evaluation harness is testable before any real clips exist. The mock is geometrically perfect and has no glasses/lighting/noise -- NO graded accuracy figure may come from it (datasets/README.md). Ground truth mirrors interfaces/mock/scenario.json. Replace this with a real manifest whose clips point at datasets/clips/... to produce graded numbers.",
+ "clips": [
+  {
+   "file": "mock",
+   "duration_s": 10.0,
+   "subject": "synthetic",
+   "glasses": false,
+   "lighting": "synthetic",
+   "ground_truth": {
+    "eyes_closed_s": [[0.7, 0.82], [1.6, 1.72], [2.8, 2.92], [4.4, 4.54], [5.2, 7.0], [7.25, 7.6], [7.75, 7.98]],
+    "yawn_s": [[2.2, 3.4]],
+    "drowsy_episodes_s": [[5.2, 7.0]]
+   }
+  }
+ ]
+}
