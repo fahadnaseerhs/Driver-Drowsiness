@@ -1,0 +1,2 @@
+Real driver clips go here. NEVER committed (see ../README.md and the .gitignore rules).
+List each clip in datasets/manifests/<name>.json together with its ground-truth labels.
