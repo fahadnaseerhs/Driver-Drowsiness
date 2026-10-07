@@ -1,0 +1,67 @@
+{
+ "frames": 300,
+ "per_stage_ms": {
+  "sg1_face": {
+   "n": 0
+  },
+  "sg2_eye": {
+   "n": 300,
+   "mean_ms": 0.011,
+   "p50_ms": 0.011,
+   "p95_ms": 0.013,
+   "max_ms": 0.045,
+   "fps_ceiling": 94762.77
+  },
+  "sg3_yawn": {
+   "n": 300,
+   "mean_ms": 0.005,
+   "p50_ms": 0.005,
+   "p95_ms": 0.006,
+   "max_ms": 0.015,
+   "fps_ceiling": 196347.93
+  },
+  "sg4_temporal": {
+   "n": 300,
+   "mean_ms": 0.056,
+   "p50_ms": 0.064,
+   "p95_ms": 0.069,
+   "max_ms": 0.112,
+   "fps_ceiling": 17700.79
+  },
+  "sg5_decision": {
+   "n": 300,
+   "mean_ms": 0.008,
+   "p50_ms": 0.008,
+   "p95_ms": 0.009,
+   "max_ms": 0.022,
+   "fps_ceiling": 129048.91
+  }
+ },
+ "end_to_end": {
+  "n": 300,
+  "mean_ms": 0.093,
+  "p50_ms": 0.097,
+  "p95_ms": 0.108,
+  "max_ms": 0.185,
+  "fps_ceiling": 10763.07
+ },
+ "module_errors": {},
+ "contract_violations": [],
+ "contract_violation_count": 0,
+ "state_intervals": {
+  "OK": [
+   [
+    0.0,
+    6.167
+   ]
+  ],
+  "WARN": [],
+  "ALERT": [
+   [
+    6.2,
+    9.967
+   ]
+  ]
+ },
+ "peak_drowsy_score": 0.9267
+}

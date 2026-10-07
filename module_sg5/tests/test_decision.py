@@ -13,12 +13,19 @@ from module_sg5.src.decision import DrowsinessDecider
 
 
 def temporal(i: int, score: float, closure_s: float = 0.0,
-             confidence: float = 1.0, valid: bool = True) -> TemporalResult:
+             confidence: float = 1.0, valid: bool = True,
+             current_closure_s: float | None = None) -> TemporalResult:
     if not valid:
         return TemporalResult.empty(i, i / 30.0, reason="no_valid_observations")
+    # By default the ongoing closure equals the window max (a closure in progress).
+    # Pass current_closure_s explicitly to model a closure that has already ended
+    # while its value still sits in the window as longest_closure_s.
+    if current_closure_s is None:
+        current_closure_s = closure_s
     return TemporalResult(frame_id=i, timestamp=i / 30.0, valid=True, reason="",
                           window_s=3.0, window_filled=True, perclos=min(1.0, score),
-                          longest_closure_s=closure_s, drowsy_score=score,
+                          longest_closure_s=closure_s,
+                          current_closure_s=current_closure_s, drowsy_score=score,
                           confidence=confidence)
 
 
@@ -139,6 +146,44 @@ def test_closure_just_below_the_override_does_not_fire():
     d = DrowsinessDecider({"closure_override_s": 1.20})
     r = d.process(temporal(0, score=0.05, closure_s=1.0))
     assert r.state is DrowsinessState.OK
+
+
+def test_window_max_closure_alone_does_not_force_alert():
+    """Regression for the stuck alarm: a long closure that has ALREADY ENDED
+    still sits in the window as longest_closure_s, but the eyes are open now
+    (current_closure_s == 0). The override must key on the CURRENT closure, so a
+    low score with no ongoing closure stays OK."""
+    d = DrowsinessDecider({"closure_override_s": 1.20})
+    r = d.process(temporal(0, score=0.05, closure_s=1.80, current_closure_s=0.0))
+    assert r.state is DrowsinessState.OK, "window-max closure must not fire the override"
+
+
+def test_override_releases_when_the_closure_ends_so_the_alert_can_clear():
+    """The whole bug: with the eyes reopened the override must let go, and the
+    alarm must clear once the score falls and the latch expires -- even though
+    longest_closure_s is still high in the window."""
+    d = DrowsinessDecider({"closure_override_s": 1.20, "alert_latch_s": 0.5,
+                           "min_dwell_s": 0.2})
+    # Eyes closed and still closing: override fires, we are in ALERT.
+    for i in range(40):
+        d.process(temporal(i, score=0.2, closure_s=1.5, current_closure_s=1.5))
+    assert d._state is DrowsinessState.ALERT
+    # Eyes reopen: current closure is 0 though the 1.5 s closure lingers as the
+    # window max; score has fallen. The alarm must de-escalate to OK.
+    last = None
+    for j in range(90):
+        last = d.process(temporal(40 + j, score=0.05, closure_s=1.5,
+                                   current_closure_s=0.0))
+    assert last.state is DrowsinessState.OK, "override still pinning ALERT after recovery"
+
+
+def test_an_ongoing_long_closure_still_alerts_immediately():
+    """Safety must survive the fix: eyes shut NOW for >= the override still goes
+    straight to ALERT, bypassing dwell."""
+    d = DrowsinessDecider({"closure_override_s": 1.20, "min_dwell_s": 2.0})
+    r = d.process(temporal(0, score=0.05, closure_s=1.5, current_closure_s=1.5))
+    assert r.state is DrowsinessState.ALERT
+    assert "sustained closure" in r.evidence
 
 
 # --- housekeeping ----------------------------------------------------------- #
