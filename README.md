@@ -1,121 +1,137 @@
-# Driver Drowsiness Monitoring — Team G2-D1
+# Driver Drowsiness Monitoring System
 
-**CS-477 Computer Vision · SEECS CV Face-Off 2026 · Semester Project**
-
-Target platform: **NVIDIA Jetson Orin Nano 8GB** · Python 3.10 · OpenCV · TensorRT FP16
-
----
-
-## Assessment breakdown
-
-**Grade = 60% sub-group + 40% overall project + up to 5% Face-Off bonus.**
-
-The overall 40% is capped by system completeness:
-
-| Completion level | Max overall score |
-|---|---|
-| Working end-to-end system on the Jetson | **40/40** |
-| Essential module missing | **30/40** |
-| Modules exist but no working pipeline | **20/40** |
-
-A module that works alone but cannot integrate through its agreed interface **is not complete**.
-
-**Formal gates:** Lab 3 (interface freeze) -- Lab 8 (real modules replace mocks) -- Lab 11 (full pipeline on the Jetson). Labs 12-14 optimise an existing integrated system -- first-time integration must not begin there.
+A real-time computer-vision system that watches a driver through a camera and warns
+them when they start to fall asleep.
 
 ---
 
-## What is working right now
+## 1. What is this project?
 
-Tested on Windows AMD64, CPython 3.12. Reproduce with `python integration/run_pipeline.py --source mock`.
+A drowsy driver is dangerous: eyes close for a second too long, blinks get slow,
+yawns pile up. This system watches the driver's face live through a camera and, the
+moment those signs add up, it raises an alarm — a staged **OK → WARN → ALERT**
+decision with an on-device buzzer/light.
 
-| Metric | Value |
-|---|---|
-| Tests passing | **102** (1 skipped -- needs MediaPipe) |
-| Contract violations across 300 frames | **0** |
-| Module errors | none |
-| Alarm latency behind closure onset | 1.00 s |
-| False alarms while driver is awake | 0 |
-| State transitions over 10 s | 2 (no chattering) |
+**How we do it.** Everything runs in **Python with OpenCV**. The camera feeds frames
+into a chain of small, specialised stages. One frame alone means nothing (people
+blink and glance down all the time), so the system reasons about the *pattern over
+time* — how long the eyes stay shut, how often, how much yawning — before it decides
+anything. The final system runs on an **NVIDIA Jetson Orin Nano** (a small in-car
+computer), at 720p and 30 frames per second.
 
-Per-frame cost: SG-2 0.012 ms, SG-3 0.006 ms, SG-4 0.063 ms, SG-5 0.008 ms, end-to-end **0.103 ms** (excludes SG-1 and camera capture, which will dominate on Jetson).
+**Algorithms we'll use (tentative — baselines first, then compared against alternatives):**
 
-**Not measured yet:** any accuracy figure, anything on the Jetson, anything on real video, and SG-1 in any form.
+| Stage | Baseline algorithm | What it measures | Alternative we'll compare |
+|---|---|---|---|
+| Face & landmarks | **MediaPipe FaceMesh** | finds the face, 68 facial points | RetinaFace + PFLD |
+| Eye state | **EAR** (Eye Aspect Ratio) | how open the eyes are, per frame | MobileNetV2 eye classifier (better with glasses/low light) |
+| Yawn | **MAR** (Mouth Aspect Ratio) | how wide the mouth is open | MobileNet yawn classifier |
+| Temporal | **PERCLOS + sliding window** | % of time eyes closed, blink/yawn rates | LSTM over frame cues |
+| Decision | **Weighted score + hysteresis** | fuses evidence into a stable state | SVM / small MLP |
+| Jetson speed-up | **TensorRT FP16** | runs the models fast on the device | — |
 
----
-
-## Sub-groups and status
-
-| | Module | Baseline | Status | Owners (NUST ID) |
-|---|---|---|---|---|
-| **SG-1** | [Face & landmarks](module_sg1/README.md) | MediaPipe FaceMesh | never run | 466391, 464775 |
-| **SG-2** | [Eye state & blink](module_sg2/README.md) | Eye Aspect Ratio | runs on mock | 457506, 455712 |
-| **SG-3** | [Yawn & facial cues](module_sg3/README.md) | Mouth Aspect Ratio | runs on mock | 456020, 456910 |
-| **SG-4** | [Temporal analysis](module_sg4/README.md) | PERCLOS + window | at risk, see its README | 459631, 481329 |
-| **SG-5** | [Decision & alert](module_sg5/README.md) | weighted + hysteresis | at risk, see its README | 472195, 403897, 459305 |
-| **SG-6** | [Jetson & integration](embedded_sg6/README.md) | -- | **unassigned** | -- |
-
-Names are omitted -- the allocation PDF could not be parsed reliably. Confirm at the first team meeting. See [`documentation/team.md`](documentation/team.md).
+These are starting points. Each team implements the baseline first, then measures a
+second approach and picks the winner with numbers — see
+[`documentation/algorithm_selection.md`](documentation/algorithm_selection.md).
 
 ---
 
-## Decisions needed at Lab 3/4
+## 2. How we are building it
 
-These are cheap to change now and expensive later.
+The system is a **pipeline**: the camera's frame flows left to right, each stage
+adding information, until a decision comes out the end.
 
-**1. SG-6 is unassigned.** The allocation lists no pair for Embedded Deployment & Integration, while four RACI rows have SG-6 as Responsible -- including the Jetson base image everything else depends on. Nobody reaches Integration Gate 2 (Lab 11) without it. Raise with the instructor. Risk **R10**.
+```mermaid
+flowchart LR
+    CAM["Camera<br/>720p 30 FPS<br/>(SG-6)"] -->|frame| SG1["SG-1<br/>Face & 68 landmarks"]
+    SG1 -->|FaceResult| SG2["SG-2<br/>Eyes · EAR · blink"]
+    SG1 -->|FaceResult| SG3["SG-3<br/>Yawn · MAR"]
+    SG2 -->|EyeResult| SG4["SG-4<br/>Temporal · PERCLOS<br/>drowsy_score 0–1"]
+    SG3 -->|YawnResult| SG4
+    SG4 -->|TemporalResult| SG5["SG-5<br/>Decision<br/>OK / WARN / ALERT"]
+    SG5 -->|DecisionResult| ALARM["Alarm out<br/>buzzer / LED / overlay<br/>(SG-6)"]
+```
 
-**2. SG-1's landmark mapping is unverified.** `FACEMESH_TO_IBUG68` maps MediaPipe's 468 mesh vertices onto the 68-point layout that SG-2 and SG-3 depend on. If one index is wrong, EAR and MAR are quietly wrong on every frame with no crash to flag it.
+### We build in parallel, not one module after another
+
+If we built the chain in order — finish SG-1, then SG-2, then SG-3… — everyone would
+be stuck waiting for the person before them. We don't do that.
+
+Instead we **freeze the interfaces first** (the exact shape of data each stage hands
+to the next, in [`interfaces/contracts.py`](interfaces/contracts.py)) and generate
+**mock data** for every stage. Then **all six teams build at the same time**, each
+testing against the mock output of the stage before it — as if their neighbour were
+already finished.
+
+```mermaid
+flowchart TD
+    C["interfaces/contracts.py<br/>frozen data shapes"] --> M["interfaces/mock/*.json<br/>deterministic synthetic data"]
+    M --> A["SG-1 team"]
+    M --> B["SG-2 team"]
+    M --> D["SG-3 team"]
+    M --> E["SG-4 team"]
+    M --> F["SG-5 team"]
+    A & B & D & E & F --> G["All six build in parallel,<br/>nobody waits on anyone"]
+```
+
+The mock data (`mock_face.json`, `mock_eye.json`, `mock_yawn.json`,
+`mock_temporal.json`) is synthetic but geometrically honest — run the real EAR/MAR
+maths on it and you get the expected curve. It's deterministic, so every teammate
+gets byte-identical files and can compare results. Regenerate it any time with
+`python interfaces/mock/generate_mocks.py`.
+
+---
+
+## 3. The modules (branches)
+
+Six sub-groups, one folder each, one job each:
+
+| Module | Folder | Job |
+|---|---|---|
+| **SG-1** | [`module_sg1/`](module_sg1/README.md) | Find the driver's face, output 68 landmarks + eye/mouth regions |
+| **SG-2** | [`module_sg2/`](module_sg2/README.md) | Eyes open/closed, blinks, how long closed (EAR) |
+| **SG-3** | [`module_sg3/`](module_sg3/README.md) | Yawn detection (MAR) |
+| **SG-4** | [`module_sg4/`](module_sg4/README.md) | Combine cues over a time window → a drowsiness score |
+| **SG-5** | [`module_sg5/`](module_sg5/README.md) | Turn the score into a stable OK / WARN / ALERT decision |
+| **SG-6** | [`embedded_sg6/`](embedded_sg6/README.md) | Put it all on the Jetson: camera, alarm, speed profiling |
+
+```
+interfaces/   frozen data contracts + mock data   ← read this first
+common/       shared helpers (config, timing, video, JSON)
+module_sg1..5/ the five analysis modules
+embedded_sg6/ Jetson deployment
+integration/  the code that chains all five together + end-to-end tests
+evaluation/   accuracy metrics on real clips
+datasets/     manifests and download scripts only — never raw video
+documentation/ roadmap, risks, algorithm notes
+```
+
+---
+
+## 4. How to clone and set up
 
 ```bash
-python module_sg1/run.py --source 0 --verify-landmarks
-```
+# Clone
+git clone https://github.com/fahadnaseerhs/Driver-Drowsiness.git
+cd Driver-Drowsiness
 
-**3. The alarm never clears.** It fires at 6.20 s and stays on even after the driver recovers at 9.0 s. The cause is structural: SG-4's `longest_closure_s` keeps reporting the 1.8 s closure while it sits inside the 3-second window. The fix likely adds a field to the contract -- much cheaper before the freeze. See [`documentation/baseline_findings.md`](documentation/baseline_findings.md).
-
-**4. `WARN` never happens.** The system goes straight from OK to ALERT, making the intermediate state unreachable and untested. Either give it a purpose and a wide enough score band, or remove it from the contract before the freeze.
-
----
-
-## Pipeline
-
-```
-CAMERA --> SG-1 --+--> SG-2 --+--> SG-4 --> SG-5 --> ALERT
-USB-UVC    face   |    eye    |   temporal   decision   OK/WARN/ALERT
-720p30     + 68   +--> SG-3 --+   PERCLOS    hysteresis
-           lmks        yawn
-```
-
-| Arrow | Payload |
-|---|---|
-| CAMERA to SG-1 | `frame` uint8 HxWx3 BGR |
-| SG-1 to SG-2 | `face_box` + eye ROIs + 68 landmarks |
-| SG-1 to SG-3 | `mouth_roi` + 68 landmarks |
-| SG-2 to SG-4 | `eye_state` + `ear` float |
-| SG-3 to SG-4 | `yawn_flag` + `mar` float |
-| SG-4 to SG-5 | `drowsy_score` 0..1 |
-| SG-5 to alert | `state` |
-
-Contracts are enforced in [`interfaces/contracts.py`](interfaces/contracts.py). Changing them after the freeze needs team agreement, a `SCHEMA_VERSION` bump, and regenerated mocks in one pull request. See [`documentation/interface_change_policy.md`](documentation/interface_change_policy.md).
-
----
-
-## Quick start -- five minutes, no camera, no models
-
-```bash
+# Virtual environment
 python -m venv .venv
-.venv\Scripts\activate          # Windows;  source .venv/bin/activate on Linux
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Linux / macOS
+
+# Install dependencies
 pip install -r requirements-dev.txt
 ```
 
-```bash
-python -m pytest -q
-```
+Check it works — this runs the whole system against the synthetic driver, no camera
+or models needed:
 
 ```bash
 python integration/run_pipeline.py --source mock --check-scenario
 ```
 
-That last command runs the entire system against a synthetic driver who blinks, yawns, falls asleep for 1.8 seconds and turns away. Expected output:
+Expected:
 
 ```
 frames            : 300
@@ -126,58 +142,111 @@ scenario check    :
   PASS  no false alarm in the alert driver's first 2.0s
 ```
 
-No camera, Jetson, or model weights needed. Every pair can start today.
+---
+
+## 5. How to work on your module (and not break anyone else's)
+
+**Golden rule: you only touch your own module's folder.** The contracts and mock data
+are shared — they are everyone's, so you don't edit them alone.
+
+| Path | Who may change it |
+|---|---|
+| `module_sg1/` … `module_sg5/` | that sub-group — your module, your call |
+| `embedded_sg6/` | SG-6 (coordinate first) |
+| `interfaces/contracts.py` | **the whole team** — frozen, needs agreement + a `SCHEMA_VERSION` bump |
+| `interfaces/mock/` | the whole team — never hand-edit JSON; change `generate_mocks.py` and re-run |
+| `integration/`, `common/` | shared — PR reviewed by another group |
+
+**Work on a branch, never on `main` directly:**
+
+```bash
+git checkout main
+git pull                                   # start from the latest
+git checkout -b feature/sg2-ear-baseline   # your branch: feature/sgN-short-description
+```
+
+Develop and test *only* against mock input, so you never need another team's code to
+be finished:
+
+```bash
+python module_sg2/run.py                   # runs your module alone on the mock input
+python module_sg2/run.py --dump module_sg2/results/run01.json
+pytest module_sg2/tests -q                 # your module's own tests
+```
+
+Because every module reads and writes the same contract objects, when the real
+modules are ready they drop straight in where the mocks were — nothing downstream has
+to change.
 
 ---
 
-## Repository layout
+## 6. How to know your module is actually done
 
-```
-interfaces/       frozen contracts + synthetic mock data       <-- read first
-common/           shared helpers: config, timing, video, JSON
-module_sg1/       Driver Face & Landmark Detection
-module_sg2/       Eye State & Blink Analysis
-module_sg3/       Yawn & Facial-Cue Analysis
-module_sg4/       Temporal Behaviour Analysis
-module_sg5/       Drowsiness Decision & Alert Logic
-embedded_sg6/     Jetson deployment, capture, profiling
-integration/      pipeline that chains all five + end-to-end tests
-evaluation/       episode-level metrics
-datasets/         manifests and scripts only -- never the data itself
-documentation/    team, roadmap, RACI, risks, decisions, findings
-```
-
-## Common commands
+A module is **not** finished just because it runs on your machine. It's done when it
+**speaks the contract correctly** and plugs into the pipeline. Before you call it
+complete, all of these must pass:
 
 ```bash
-python -m pytest -q                                    # all 102 tests
-pytest interfaces/tests -q                             # Lab 3 interface gate
-pytest module_sg2/tests -q                             # one module
-ruff check .                                           # lint
+ruff check .                                               # lint is clean
+pytest -q                                                  # all tests pass
+python module_sgN/run.py                                   # your module: 0 contract violations
+python integration/run_pipeline.py --source mock --check-scenario   # you didn't break the chain
 ```
 
-```bash
-python module_sg2/run.py                               # one module, standalone, on mock input
-python module_sg2/run.py --dump module_sg2/results/run01.json
-python module_sg1/run.py --source 0 --verify-landmarks  # SG-1 needs a camera
+Definition of done for a module:
+
+- [ ] `python module_sgN/run.py` reports **0 contract violations**
+- [ ] Your module's tests pass (`pytest module_sgN/tests -q`)
+- [ ] The full mock pipeline still passes — proof you didn't break a neighbour
+- [ ] Your module handles bad input: upstream `valid=False` on a frame must **not** crash it (return your own `empty()` result with a reason)
+- [ ] Your module README is updated: purpose, dependencies, how to run, and a **performance table** (accuracy / FPS / memory, and *on what hardware*)
+
+A performance number without the hardware it was measured on doesn't count as a result.
+
+---
+
+## 7. How we merge to `main`
+
+`main` is protected and always green. Nothing goes in except through a reviewed pull
+request.
+
+```mermaid
+flowchart LR
+    A["Work on<br/>feature/sgN-...<br/>branch"] --> B["All checks pass<br/>locally"]
+    B --> C["Push + open<br/>Pull Request"]
+    C --> D["Another group<br/>reviews"]
+    D --> E{"CI green &<br/>approved?"}
+    E -- no --> A
+    E -- yes --> F["Merge to main"]
 ```
 
+The three checks that **must** pass before you open a PR (the last one proves you
+haven't broken anyone else's module):
+
 ```bash
+ruff check .
+pytest -q
 python integration/run_pipeline.py --source mock --check-scenario
-python integration/run_pipeline.py --source 0 --display
-python embedded_sg6/profiling/profile_pipeline.py --source mock
 ```
 
-## Where to read next
+Rules:
+- **One pull request per logical change.** A PR touching three modules is one nobody reviews properly.
+- **Branch naming:** `feature/sgN-short-description` or `fix/sgN-...`.
+- **Commit messages describe the technical change**, e.g. `SG-2: reject closures over 500 ms as blinks so microsleeps reach SG-4 as PERCLOS` — not "fixed bug".
+- A PR that touches `interfaces/contracts.py` needs team agreement and regenerated mocks; CI flags it automatically.
 
-| If you are... | Read |
-|---|---|
-| joining the team | this file, then [`documentation/team.md`](documentation/team.md) |
-| writing a module | [`interfaces/README.md`](interfaces/README.md), then your `module_sgN/README.md` |
-| about to open a PR | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
-| wondering what is broken | [`documentation/baseline_findings.md`](documentation/baseline_findings.md) |
-| planning the semester | [`documentation/roadmap.md`](documentation/roadmap.md) |
-| choosing an algorithm | [`documentation/algorithm_selection.md`](documentation/algorithm_selection.md) |
-| worried about something | [`documentation/risk_register.md`](documentation/risk_register.md) |
-| wondering who owns what | [`documentation/raci.md`](documentation/raci.md) |
-| deploying to the Jetson | [`embedded_sg6/README.md`](embedded_sg6/README.md) |
+Full working practice, PR template, and what never gets committed:
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+---
+
+## Running the whole system
+
+```bash
+python integration/run_pipeline.py --source mock             # synthetic driver (no hardware)
+python integration/run_pipeline.py --source datasets/samples/clip01.mp4   # a recorded clip
+python integration/run_pipeline.py --source 0 --display      # live camera + debug overlay
+```
+
+On the Jetson, the same pipeline runs on-device from the camera — see
+[`embedded_sg6/README.md`](embedded_sg6/README.md).
