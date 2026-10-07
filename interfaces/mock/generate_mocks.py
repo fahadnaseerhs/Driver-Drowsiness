@@ -337,6 +337,12 @@ def build_temporal_sequence(eyes: list[EyeResult], yawns: list[YawnResult],
         blinks = sum(1 for e in e_win if e.blink_event)
         yawn_events = sum(1 for y in y_win if y.yawn_event)
         longest = max((e.closure_duration_s for e in e_win), default=0.0)
+        # Closure at the current frame: the latest valid frame's ongoing closure
+        # when its eyes are closed now, else 0.0. Mirrors module_sg4's logic so
+        # the reference output matches a live SG-4 run. SG-5 keys its override on
+        # this (not on `longest`) so the alarm releases when the eyes reopen.
+        latest = e_win[-1]
+        current = latest.closure_duration_s if latest.eye_state is EyeState.CLOSED else 0.0
         # Each ear is already a 4-dp value, so sum them as exact integers
         # (tenths-of-thousandths) before dividing. A float sum of 90 values can
         # land 1 ULP apart on Linux vs Windows, which flips round() when the mean
@@ -359,6 +365,7 @@ def build_temporal_sequence(eyes: list[EyeResult], yawns: list[YawnResult],
             blink_rate_per_min=round(blinks * 60.0 / max(span, 1e-6), 2),
             yawn_rate_per_min=round(yawn_events * 60.0 / max(span, 1e-6), 2),
             longest_closure_s=round(longest, 4),
+            current_closure_s=round(current, 4),
             avg_ear=round(avg_ear, 4),
             drowsy_score=round(score, 4),
             confidence=round(len(e_win) / max(i - lo + 1, 1), 3),

@@ -140,6 +140,23 @@ def test_old_frames_leave_the_window():
     assert r.perclos == 0.0
 
 
+def test_current_closure_tracks_the_ongoing_closure_not_the_window_max():
+    """current_closure_s is the closure happening NOW: it ramps while the eyes
+    are closed and drops to 0 the frame they reopen, even though longest_closure_s
+    still holds the peak closure that remains inside the window. SG-5 keys its
+    override on this field to release the alarm after a closure ends."""
+    a = TemporalAnalyser({"window_s": 3.0})
+    r = None
+    for i in range(45):  # 1.5 s of sustained closure
+        r = a.process(eye(i, closed=True, closure_s=(i + 1) / 30.0), yawn(i))
+    assert r.current_closure_s == pytest.approx(1.5, abs=0.05)
+    assert r.longest_closure_s == pytest.approx(1.5, abs=0.05)
+    # Eyes reopen: current drops to 0 immediately; the window max still lingers.
+    r = a.process(eye(45, closed=False, closure_s=0.0), yawn(45))
+    assert r.current_closure_s == 0.0
+    assert r.longest_closure_s == pytest.approx(1.5, abs=0.05)
+
+
 def test_reset_clears_the_window():
     a = TemporalAnalyser()
     for i in range(60):

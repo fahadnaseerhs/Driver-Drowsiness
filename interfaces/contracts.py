@@ -33,7 +33,7 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any
 
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.0.1"
 
 # Target capture format agreed with SG-6 (see Figma: CAMERA USB-UVC 30 FPS 720p).
 TARGET_FPS = 30
@@ -238,6 +238,13 @@ class TemporalResult:
     blink_rate_per_min: float = 0.0
     yawn_rate_per_min: float = 0.0
     longest_closure_s: float = 0.0         # longest closure inside the window
+    # Closure duration at the CURRENT frame; 0.0 the instant the eyes reopen.
+    # Unlike longest_closure_s (any closure still inside the window), this drops
+    # to 0 as soon as a closure ends, so SG-5 can release its sustained-closure
+    # override once the eyes reopen instead of holding ALERT for a whole window.
+    # Additive, safe-default field (schema 1.0.1): consumers that ignore it are
+    # unaffected. See documentation/interface_change_policy.md.
+    current_closure_s: float = 0.0
     avg_ear: float | None = None
     drowsy_score: float = 0.0              # [0, 1] fused evidence, 1 = most drowsy
     confidence: float = 0.0
@@ -385,7 +392,8 @@ def validate(payload: Any) -> list[str]:
             errs.append(f"perclos {payload.perclos} outside [0, 1]")
         if not (0.0 <= payload.drowsy_score <= 1.0):
             errs.append(f"drowsy_score {payload.drowsy_score} outside [0, 1]")
-        for r in ("blink_rate_per_min", "yawn_rate_per_min", "longest_closure_s"):
+        for r in ("blink_rate_per_min", "yawn_rate_per_min",
+                  "longest_closure_s", "current_closure_s"):
             if getattr(payload, r) < 0:
                 errs.append(f"{r} must be >= 0")
 

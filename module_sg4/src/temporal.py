@@ -109,6 +109,15 @@ class TemporalAnalyser:
         blinks = sum(1 for _, e, _ in valid if e.blink_event)
         yawn_events = sum(1 for _, _, y in valid if y is not None and y.yawn_event)
         longest_closure = max((e.closure_duration_s for _, e, _ in valid), default=0.0)
+        # The closure happening RIGHT NOW: the most-recent valid frame's ongoing
+        # closure, and 0.0 the instant the eyes reopen. longest_closure above is a
+        # backward-looking window max; SG-5 keys its sustained-closure override on
+        # THIS so the alarm releases once a closure ends (fixes the stuck alarm).
+        latest_eye = valid[-1][1]
+        current_closure = (
+            latest_eye.closure_duration_s
+            if latest_eye.eye_state is EyeState.CLOSED else 0.0
+        )
         ears = [e.ear for _, e, _ in valid if e.ear is not None]
         avg_ear = sum(ears) / len(ears) if ears else None
 
@@ -137,6 +146,7 @@ class TemporalAnalyser:
             blink_rate_per_min=round(blink_rate, 2),
             yawn_rate_per_min=round(yawn_rate, 2),
             longest_closure_s=round(longest_closure, 4),
+            current_closure_s=round(current_closure, 4),
             avg_ear=None if avg_ear is None else round(avg_ear, 4),
             drowsy_score=round(score, 4),
             confidence=round(coverage, 4),

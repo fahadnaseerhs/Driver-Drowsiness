@@ -115,7 +115,12 @@ class DrowsinessDecider:
         score = temporal.drowsy_score
 
         # --- hard override: sustained eye closure --------------------------- #
-        override = temporal.longest_closure_s >= self.closure_override_s
+        # Key on the CURRENT closure, not the window max: an ongoing closure is
+        # the emergency. longest_closure_s stays high for a whole window after the
+        # eyes reopen, so keying the override on it held ALERT ~3 s into recovery
+        # (the stuck-alarm bug). current_closure_s drops to 0 the instant the eyes
+        # reopen, so the override releases and normal hysteresis/latch take over.
+        override = temporal.current_closure_s >= self.closure_override_s
         if override:
             target = DrowsinessState.ALERT
         elif temporal.confidence < self.min_confidence:
@@ -163,7 +168,7 @@ class DrowsinessDecider:
         """Human-readable justification -- goes on the demo overlay and into
         failure analysis. Graded: "Alert thresholds and failure analysis" (RACI)."""
         if override:
-            return (f"sustained closure {t.longest_closure_s:.2f}s "
+            return (f"sustained closure {t.current_closure_s:.2f}s "
                     f">= {self.closure_override_s:.2f}s -> ALERT")
         bits = [
             f"score {t.drowsy_score:.2f}",
