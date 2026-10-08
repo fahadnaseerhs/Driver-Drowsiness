@@ -13,6 +13,22 @@ fixed data format, so no one waits for anyone else.
 ## What this module does
 Gets the whole pipeline running on the NVIDIA Jetson Orin Nano and keeps the six modules fitting together — the integration owner.
 
+## Algorithm
+SG-6 does not pick a detection algorithm — it **deploys and profiles** the ones the other
+five modules chose (see `documentation/algorithm_selection.md`): MediaPipe FaceMesh (SG-1),
+EAR (SG-2), MAR (SG-3), PERCLOS over a sliding window (SG-4) and weighted-score + hysteresis
+(SG-5). Its own choices are about the *runtime*, not the maths:
+
+- **What it does:** stands up a reproducible Jetson environment, runs the end-to-end pipeline
+  (`integration/run_pipeline.py`) on the device, and measures frame rate, latency and memory
+  against the 8 GB budget and the ~30 FPS target.
+- **Why it matters:** every FPS/memory score in the decision matrix is currently an
+  *estimate* made on a PC — MediaPipe's aarch64 build, and CPU-vs-GPU execution, are open
+  questions until measured on the Orin Nano. Deployment is where the algorithm choices get
+  confirmed or revised, and where power mode (`nvpmodel`) must be recorded with every number.
+- **Decisions it drives:** CPU vs GPU per stage, whether MediaPipe runs acceptably on device,
+  and whether any module must fall back to a lighter variant to hold real-time.
+
 ## How we did it this week
 Needs an owner. This week: set up a Jetson environment others can reproduce, get one real module running on it, compare CPU vs GPU, and keep a log of integration problems.
 
