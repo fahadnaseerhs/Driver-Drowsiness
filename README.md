@@ -13,6 +13,24 @@ fixed data format, so no one waits for anyone else.
 ## What this module does
 Makes the final call — OK / WARN / ALERT — from the temporal evidence, and raises the alarm. It uses hysteresis, a hold time, and a latch so the alarm doesn't flicker, plus an instant override if the eyes are shut too long.
 
+## Algorithm
+**Chosen (target): weighted score + hysteresis.** Scored 54 — chosen over the plain
+rule-based baseline (49) in the decision matrix (`documentation/algorithm_selection.md`).
+
+- **What it does:** turns SG-4's `drowsy_score` into OK/WARN/ALERT with four safeguards:
+  **asymmetric thresholds** (rising needs a higher score than falling, so a score on the
+  boundary doesn't flicker), a **dwell time** (a state must persist before it's adopted), a
+  **latch** (once ALERT fires it holds briefly so it doesn't stutter off), and a **hard
+  override** straight to ALERT if the eyes are closed *right now* for too long. It also
+  refuses to escalate when upstream `confidence` is low.
+- **Why this one:** this is the system's only safety-relevant output and it owns risk R6 —
+  *false alarms make the driver switch the system off.* Plain thresholds flicker; the
+  hysteresis/dwell/latch machinery is what keeps nuisance alarms down, so there was no
+  reason to ship the weaker rule-based version first.
+- **Being compared (Labs 5–6):** a second decision rule (different thresholds vs a
+  state-machine), and an SVM / small MLP (scored 50) once there is enough labelled data to
+  train one without overfitting (risk R5).
+
 ## How we did it this week
 The emergency override now triggers on the CURRENT closure (part of the stuck-alarm fix), so the alarm clears when the eyes reopen. Next: try a second decision rule (different thresholds vs a state-machine) and count false and missed alarms.
 
