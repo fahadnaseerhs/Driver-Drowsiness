@@ -13,6 +13,21 @@ fixed data format, so no one waits for anyone else.
 ## What this module does
 Finds the driver's face in each camera frame and places 68 landmark points on it (eyes, mouth, jaw, nose). It's the first stage — everything downstream reads its output.
 
+## Algorithm
+**Chosen (baseline): MediaPipe FaceMesh.** Highest weighted score (55) in the decision
+matrix (`documentation/algorithm_selection.md`).
+
+- **What it does:** detects the face and a dense 468-point mesh per frame, which we map
+  down to the classic 68-point iBUG layout the contract fixes, so SG-2/SG-3 can hard-code
+  stable eye/mouth indices. Emits a face box, the 68 points, eye/mouth ROIs and a confidence.
+- **Why this one:** on an 8 GB embedded device, frame rate and memory decide the design.
+  FaceMesh runs fast (FPS scored 5), is light on memory, ships a pretrained model (no
+  training data needed) and has a permissive licence — the best accuracy-for-cost of the
+  candidates.
+- **Being compared (Labs 5–6):** RetinaFace + PFLD (scored 50 — more accurate on hard poses
+  but slower); YOLOv8-face was rejected on memory cost. The FPS/accuracy trade on the real
+  Jetson is the open question — the matrix is a prioritisation, not a measured result.
+
 ## How we did it this week
 Baseline is coded (MediaPipe FaceMesh, 468 points mapped to our 68). This week: actually run it and confirm it emits one valid face result, then try a second setting (detection confidence or input resolution) and note the detection rate, speed, and where it fails.
 
