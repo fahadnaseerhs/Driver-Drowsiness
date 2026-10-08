@@ -13,6 +13,20 @@ fixed data format, so no one waits for anyone else.
 ## What this module does
 Detects yawns from how wide the mouth opens (Mouth Aspect Ratio) and for how long.
 
+## Algorithm
+**Chosen (baseline): Mouth Aspect Ratio (MAR) with a threshold + duration.** Scored 49 in
+the decision matrix (`documentation/algorithm_selection.md`).
+
+- **What it does:** MAR = ‖p51−p57‖ / ‖p48−p54‖ — mouth opening height over width, from the
+  lip landmarks. When MAR stays above a threshold for long enough it is a yawn (brief
+  openings from talking/smiling are filtered by the minimum duration). Emits MAR, a
+  per-frame yawn flag, a completed-yawn event and the yawn duration.
+- **Why this one:** like EAR, it is cheap geometry on existing landmarks — tiny memory, high
+  FPS, no model to train, and explainable. The right baseline for embedded.
+- **Being compared (Labs 5–6): a MobileNet yawn classifier (also 49 — the same tie as
+  SG-2).** MAR is simple but can be fooled by talking or an occluded mouth; the CNN is more
+  robust but heavier. Needs real, varied clips to decide (risk R1).
+
 ## How we did it this week
 Baseline (MAR with a threshold) runs on mock input. This week: try a different MAR threshold or require the mouth to stay open a minimum time before it counts as a yawn; measure false yawns and missed yawns.
 
