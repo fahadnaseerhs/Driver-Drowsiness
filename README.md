@@ -13,6 +13,22 @@ fixed data format, so no one waits for anyone else.
 ## What this module does
 Decides whether the eyes are open or closed each frame, counts blinks, and times how long the eyes stay shut — using the Eye Aspect Ratio (EAR) from the landmarks.
 
+## Algorithm
+**Chosen (baseline): Eye Aspect Ratio (EAR) with a threshold.** Scored 49 in the decision
+matrix (`documentation/algorithm_selection.md`).
+
+- **What it does:** from the six eye landmarks, EAR = (‖p2−p6‖ + ‖p3−p5‖) / (2·‖p1−p4‖) —
+  the ratio of eye height to width. It drops sharply when the lid closes; below a threshold
+  the eye is CLOSED. From that the module times closure duration and flags a blink only on a
+  *short* closure, so a long microsleep is not mistaken for a blink.
+- **Why this one:** it is arithmetic on points we already have — no model, near-zero memory
+  (scored 5) and frame-rate cost (5), and fully explainable, which matters for a safety
+  cue. Fast and transparent beats a black box for the baseline.
+- **Being compared (Labs 5–6): a MobileNetV2 open/closed classifier (also 49 — a genuine
+  tie).** EAR is cheap but degrades with glasses and low light; the CNN is robust there but
+  costs memory and FPS. That trade can't be settled without glasses/night clips (risk R1) —
+  fix the data before arguing about the model.
+
 ## How we did it this week
 Baseline (EAR with a threshold) runs on mock input. This week: try different EAR thresholds (or EAR vs a small classifier) and check how it behaves with glasses, head tilt, and dim light — count the wrong open/closed calls.
 
