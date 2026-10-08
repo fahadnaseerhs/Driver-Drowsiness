@@ -17,9 +17,9 @@ How to do them → [[How To Do These Tasks]]. Questions → [[Chats/_index|Chats
 ## Researcher / Coder active work
 - [x] Coder: real-data evaluation harness (PASS; MERGED to main 2683fa4, pushed)
 - [x] Researcher: Week 6 plan — APPROVED (data source = live recording); see [[Planning/Week 6 Plan (APPROVED)]]
-- [x] Researcher: per-branch READMEs drafted in [[Planning/Branch Guides/SG-1 branch]] … SG-6 — [ ] still to distribute onto each branch
+- [x] Researcher: per-branch READMEs drafted AND distributed onto all 6 branches (pushed; detailed design kept as DESIGN.md)
 - [x] Researcher: [[Planning/Big-6 Plan]] + [[Planning/Week 6 Recommendation]] written
-- [ ] Researcher: put the To-Do on GitHub (Issues / Project board, +5 bonus)
+- [x] Researcher: GitHub Issues #1-#12 created (labelled; #11-#12 closed w/ evidence) — [ ] Project *board* needs `gh auth refresh -s project` then I add issues
 
 ## Per sub-group (each pair)
 
