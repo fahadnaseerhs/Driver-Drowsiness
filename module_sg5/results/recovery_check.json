@@ -1,0 +1,188 @@
+{
+ "check": "sg5_recovery_after_sustained_closure",
+ "what_it_proves": "that SG-5's sustained-closure override releases when the eyes reopen (commit 8c9c079: override keyed on current_closure_s, not longest_closure_s) and whether the alarm then actually clears end to end",
+ "graded_accuracy": false,
+ "note": "Synthetic mock input (interfaces/mock). This check proves the recovery MECHANISM -- that the sustained-closure override releases and the state leaves ALERT -- not accuracy. datasets/README.md forbids any graded accuracy figure from the mock.",
+ "input": {
+  "eye": "interfaces/mock/mock_eye.json",
+  "yawn": "interfaces/mock/mock_yawn.json",
+  "paired_by": "index (same frame); SG-4 rejects a frame_id mismatch",
+  "mock_frames": 300,
+  "mock_duration_s": 9.9667,
+  "synthetic_tail_s": 4.0,
+  "synthetic_tail_frames": 120,
+  "synthetic_tail_why": "the 1.83s closure only leaves SG-4's 3s window at ~10.0s, after the last mock frame, so eyes-open frames are appended to make a clearing time measurable at all; every number taken from them is flagged synthetic_tail"
+ },
+ "configs": {
+  "sg4": "module_sg4/configs/default.yaml",
+  "sg5": "module_sg5/configs/default.yaml",
+  "window_s": 3.0,
+  "closure_ref_s": 1.5,
+  "alert_on": 0.7,
+  "alert_off": 0.55,
+  "alert_latch_s": 1.5,
+  "closure_override_s": 1.2
+ },
+ "closure": {
+  "onset_s": 5.2,
+  "reopen_s": 7.0333,
+  "duration_s": 1.8333,
+  "derived_from": "mock EyeResult eye_state / closure_duration_s track"
+ },
+ "alert": {
+  "first_alert_s": 6.2,
+  "onset_to_alert_lag_s": 1.0,
+  "cleared_s": 10.9334,
+  "reopen_to_clear_lag_s": 3.9001,
+  "cleared_during_mock_clip": false,
+  "state_at_end_of_mock_clip": "ALERT"
+ },
+ "override": {
+  "fixed_keyed_on": "current_closure_s",
+  "fixed_active_from_s": 6.3667,
+  "fixed_active_until_s": 7.0,
+  "released_before_reopen": true,
+  "release_lead_on_reopen_s": 0.0333,
+  "counterfactual_keyed_on": "longest_closure_s (pre-8c9c079 behaviour)",
+  "counterfactual_active_from_s": 6.3667,
+  "counterfactual_active_until_s": 10.0,
+  "counterfactual_still_firing_after_reopen_s": 2.9667,
+  "counterfactual_cleared_s": 10.9334,
+  "fix_changes_end_to_end_clearing": false,
+  "fix_changes_end_to_end_clearing_note": "False means both arms leave ALERT at the same instant: on this input the drowsy_score keeps the state up long after the override has let go, so 8c9c079 fixes the override but not the stuck alarm the user sees"
+ },
+ "around_reopen": [
+  {
+   "frame_id": 208,
+   "timestamp_s": 6.9333,
+   "longest_closure_s": 1.7667,
+   "current_closure_s": 1.7667,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": true,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 209,
+   "timestamp_s": 6.9667,
+   "longest_closure_s": 1.8,
+   "current_closure_s": 1.8,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": true,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 210,
+   "timestamp_s": 7.0,
+   "longest_closure_s": 1.8333,
+   "current_closure_s": 1.8333,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": true,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 211,
+   "timestamp_s": 7.0333,
+   "longest_closure_s": 1.8333,
+   "current_closure_s": 0.0,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": false,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 212,
+   "timestamp_s": 7.0667,
+   "longest_closure_s": 1.8333,
+   "current_closure_s": 0.0,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": false,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 213,
+   "timestamp_s": 7.1,
+   "longest_closure_s": 1.8333,
+   "current_closure_s": 0.0,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": false,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 214,
+   "timestamp_s": 7.1333,
+   "longest_closure_s": 1.8333,
+   "current_closure_s": 0.0,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": false,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 215,
+   "timestamp_s": 7.1667,
+   "longest_closure_s": 1.8333,
+   "current_closure_s": 0.0,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": false,
+   "synthetic_tail": false
+  },
+  {
+   "frame_id": 216,
+   "timestamp_s": 7.2,
+   "longest_closure_s": 1.8333,
+   "current_closure_s": 0.0,
+   "drowsy_score": 0.9,
+   "state": "ALERT",
+   "override_active": false,
+   "synthetic_tail": false
+  }
+ ],
+ "transitions": [
+  {
+   "timestamp_s": 6.2,
+   "frame_id": 186,
+   "from_state": "OK",
+   "to_state": "ALERT",
+   "evidence": "ALERT: score 0.90, PERCLOS 0.40, closure 1.03s, blinks 20/min, yawns 20.0/min",
+   "synthetic_tail": false
+  },
+  {
+   "timestamp_s": 10.9334,
+   "frame_id": 328,
+   "from_state": "ALERT",
+   "to_state": "OK",
+   "evidence": "OK: score 0.08, PERCLOS 0.02, closure 0.27s, blinks 0/min, yawns 0.0/min",
+   "synthetic_tail": true
+  }
+ ],
+ "counterfactual_transitions": [
+  {
+   "timestamp_s": 6.2,
+   "frame_id": 186,
+   "from_state": "OK",
+   "to_state": "ALERT",
+   "evidence": "ALERT: score 0.90, PERCLOS 0.40, closure 1.03s, blinks 20/min, yawns 20.0/min",
+   "synthetic_tail": false
+  },
+  {
+   "timestamp_s": 10.9334,
+   "frame_id": 328,
+   "from_state": "ALERT",
+   "to_state": "OK",
+   "evidence": "OK: score 0.08, PERCLOS 0.02, closure 0.27s, blinks 0/min, yawns 0.0/min",
+   "synthetic_tail": true
+  }
+ ],
+ "verdict": {
+  "pass": false,
+  "override_released_on_reopen": true,
+  "alert_cleared_within_latch": false,
+  "reason": "the override released on the reopen, but ALERT took 3.9001s to clear, which is longer than alert_latch_s=1.50s; the alarm is being held by the drowsy_score, not by the override"
+ }
+}
