@@ -65,6 +65,36 @@ Lab 6 accuracy numbers disappoint you.
   still remember the take.
 - Get consent from everyone recorded, and keep the clips off the repo.
 
+### The two scripts that do this
+
+```bash
+# 1. Find your camera, then record. The clip lands in datasets/clips/ (gitignored).
+python datasets/scripts/record_clip.py --list-devices
+python datasets/scripts/record_clip.py --name s01_awake_day_01 --seconds 30
+
+# 2. Turn the seconds you noted into a committable manifest.
+python datasets/scripts/make_manifest.py --clip datasets/clips/s01_awake_day_01.mp4 \
+    --name s01_awake_day_01 --split train --subject s01 \
+    --closed "12.4-14.1,28.0-28.3" --yawn "19.2-21.0" --drowsy "12.4-14.1"
+
+# 3. Run the real pipeline, and score it.
+python integration/run_pipeline.py --source datasets/clips/s01_awake_day_01.mp4
+python evaluation/run_eval.py --manifest datasets/manifests/s01_awake_day_01.json \
+    --out module_sg5/results/s01_awake_day_01_eval.json
+```
+
+[record_clip.py](scripts/record_clip.py) shows elapsed seconds on the preview so you can
+note closures as they happen, and warns if the effective frame rate falls well under the
+requested one. [make_manifest.py](scripts/make_manifest.py) validates the labels rather
+than trusting them — a reversed range, an interval running past the end of the clip, or
+overlapping intervals are all rejected, and a drowsy episode that overlaps no labelled
+closure gets a warning. Re-running it with the same `--name` appends, so a split can be
+built one take at a time.
+
+**Start with awake-driver clips.** They need no drowsy acting — just someone driving or
+sitting normally — and false alarms per hour on that footage is the number SG-5 lives or
+dies by. It is the cheapest data in the project.
+
 ## Manifest format
 
 One JSON file per split in `manifests/`. Everything needed to reproduce the set
