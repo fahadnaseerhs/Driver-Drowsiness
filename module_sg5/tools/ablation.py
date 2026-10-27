@@ -116,6 +116,12 @@ class Fixture:
     headline: str
     caveat: str
     segments: tuple[dict[str, Any], ...] = field(default_factory=tuple)
+    # A recorded run is real pixels, so the synthetic warning does not apply to
+    # it -- but without someone writing down when the driver was actually drowsy
+    # there is no ground truth, so false alarms and episode lag cannot be
+    # counted. Both facts travel with the fixture rather than being assumed.
+    synthetic: bool = True
+    labelled: bool = True
 
     def is_genuine(self, t: float) -> bool:
         return any(a <= t < b for a, b in self.genuine_spans)
@@ -218,6 +224,7 @@ def _measure(name: str, config: dict[str, Any], inputs: list[TemporalResult],
     last_alert_cleared_s: float | None = None
     false_alarm_frames = 0
     previous = DrowsinessState.OK
+    track: list[tuple[float, str]] = []      # for the plot; stripped before JSON
 
     for temporal in inputs:
         t0 = time.perf_counter()
@@ -236,13 +243,15 @@ def _measure(name: str, config: dict[str, Any], inputs: list[TemporalResult],
                 # LAST one. Stays None if the clip ends mid-alert.
                 last_alert_cleared_s = result.timestamp
         if result.state is DrowsinessState.ALERT:
-            if not fixture.is_genuine(result.timestamp):
-                false_alarm_frames += 1
-            elif first_episode_alert_s is None:
-                first_episode_alert_s = result.timestamp
+            if fixture.labelled:
+                if not fixture.is_genuine(result.timestamp):
+                    false_alarm_frames += 1
+                elif first_episode_alert_s is None:
+                    first_episode_alert_s = result.timestamp
             seg = fixture.segment_at(result.timestamp)
             if seg is not None:
                 alert_by_segment[seg] += 1
+        track.append((round(result.timestamp, 4), result.state.value))
         previous = result.state
 
     ordered = sorted(latencies_ms)
@@ -265,13 +274,16 @@ def _measure(name: str, config: dict[str, Any], inputs: list[TemporalResult],
         "last_alert_cleared_s": (round(last_alert_cleared_s, 4)
                                  if last_alert_cleared_s is not None else None),
         "frames_in_state": frames_in_state,
-        "false_alarm_frames": false_alarm_frames,
+        # None, not 0, when the input carries no ground truth: "we did not count"
+        # and "we counted none" are different claims and must not look alike.
+        "false_alarm_frames": false_alarm_frames if fixture.labelled else None,
         "latency_mean_ms": round(sum(ordered) / len(ordered), 4) if ordered else 0.0,
         "latency_p95_ms": round(_percentile(ordered, 0.95), 4),
         # Cross-check against the decider's own counter: they should agree, and a
         # disagreement means one of the two definitions of "episode" is wrong.
         "decider_alert_count": decider.alert_count,
         "name": name,
+        "_track": track,                     # plot only; stripped before JSON
     }
     if fixture.segments:
         out["alert_frames_by_segment"] = alert_by_segment
@@ -293,6 +305,11 @@ def _changed_keys(run: dict[str, Any], full: dict[str, Any]) -> list[str]:
 
 def _fmt(value: Any) -> str:
     return "never" if value is None else (f"{value:g}" if isinstance(value, float) else str(value))
+
+
+def _count(value: Any) -> str:
+    """A count that was never taken reads `n/a`, not `never` and not `0`."""
+    return "n/a" if value is None else str(value)
 
 
 def _delta(mechanism: dict[str, Any], full: dict[str, Any], key: str, unit: str = "") -> str:
@@ -372,9 +389,14 @@ def _render_fixture_section(block: dict[str, Any]) -> list[str]:
         " NEGATIVE episode lag means the alarm was already ringing when the"
         " episode began -- carried in from an earlier spurious alert, not"
         " earned.",
-        "- Genuine drowsy episodes (s): "
-        + ", ".join(f"{a:g}-{b:g}" for a, b in block["genuine_spans_s"])
-        + ". An ALERT frame outside them is counted as a false alarm.",
+        ("- Genuine drowsy episodes (s): "
+         + ", ".join(f"{a:g}-{b:g}" for a, b in block["genuine_spans_s"])
+         + ". An ALERT frame outside them is counted as a false alarm."
+         if block["labelled"] else
+         "- **Unlabelled input.** Nobody recorded when the driver was actually"
+         " drowsy, so false alarms and episode lag cannot be counted and read"
+         " `n/a`. Everything that compares one configuration against another on"
+         " identical input is still valid -- that is what this study measures."),
         f"- `graded_accuracy: false`. {block['caveat']}",
         "",
     ]
@@ -410,7 +432,7 @@ def _render_fixture_section(block: dict[str, Any]) -> list[str]:
             f"| {_fmt(run['episode_lag_s'])} "
             f"| {_fmt(run['last_alert_cleared_s'])} | {states['OK']} "
             f"| {states['WARN']} | {states['ALERT']} "
-            f"| {run['false_alarm_frames']} "
+            f"| {_count(run['false_alarm_frames'])} "
             f"| {run['latency_mean_ms']:.4f} | {run['latency_p95_ms']:.4f} |"
         )
     lines.append("")
@@ -584,6 +606,74 @@ def _render_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _plot_fixture(block: dict[str, Any], inputs: list[TemporalResult], out: Path) -> None:
+    """One figure per fixture: the score on top, then one state row per config.
+
+    The tables say *what* changed; this says *where*. Seven state rows stacked on
+    one clock make a mechanism's contribution visible at a glance -- the extra
+    red bars that appear when the dwell timer goes, the red that vanishes
+    entirely when the override goes.
+    """
+    import matplotlib
+    matplotlib.use("Agg")                    # write a file; no display needed
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
+
+    runs: dict[str, dict[str, Any]] = block["configurations"]
+    colours = {"OK": "#2ca02c", "WARN": "#ff7f0e", "ALERT": "#d62728"}
+    height = 2.6 + 0.52 * len(runs)
+    fig, (ax_score, ax_states) = plt.subplots(
+        2, 1, figsize=(15, height), sharex=True,
+        gridspec_kw={"height_ratios": [2, max(2, len(runs) * 0.75)]})
+
+    t = [x.timestamp for x in inputs]
+    ax_score.plot(t, [x.drowsy_score for x in inputs], lw=1.0, color="#d62728",
+                  label="drowsy_score")
+    ax_score.plot(t, [x.perclos for x in inputs], lw=0.8, color="#9467bd", label="PERCLOS")
+    ax_score.plot(t, [x.confidence for x in inputs], lw=0.7, color="0.5", ls=":",
+                  label="confidence")
+    for level, colour, style in ((0.70, "red", "--"), (0.55, "red", "-."),
+                                 (0.45, "orange", "--"), (0.35, "orange", "-.")):
+        ax_score.axhline(level, color=colour, lw=0.8, ls=style, alpha=0.7)
+    for a, b in block["genuine_spans_s"]:
+        ax_score.axvspan(a, b, color="0.85", zorder=0)
+    ax_score.set_ylim(-0.02, 1.05)
+    ax_score.set_ylabel("score")
+    ax_score.legend(loc="upper right", fontsize=7)
+    ax_score.grid(alpha=0.3)
+    kind = "SYNTHETIC" if block["input_is_synthetic"] else "REAL RUN (unlabelled)"
+    ax_score.set_title(f"Ablation -- {block['input']}  [{kind}]  "
+                       f"thresholds 0.70/0.55 alert, 0.45/0.35 warn"
+                       + ("   (grey = genuine episode)" if block["labelled"] else ""))
+
+    # One row per configuration, drawn as runs of colour rather than per frame.
+    names = list(runs)
+    for row, name in enumerate(names):
+        track = runs[name]["_track"]
+        if not track:
+            continue
+        start, state = track[0]
+        for ts, value in track[1:] + [(track[-1][0], None)]:
+            if value != state:
+                ax_states.barh(row, ts - start, left=start, height=0.72,
+                               color=colours[state], edgecolor="none")
+                start, state = ts, value
+    ax_states.set_yticks(range(len(names)))
+    ax_states.set_yticklabels([f"{n}  ({runs[n]['transitions']} chg, "
+                               f"{runs[n]['alert_episodes']} alarms)" for n in names],
+                              fontsize=8)
+    ax_states.invert_yaxis()
+    ax_states.set_xlabel("seconds")
+    ax_states.legend(handles=[Patch(color=c, label=s) for s, c in colours.items()],
+                     loc="upper right", fontsize=8, ncol=3)
+    ax_states.grid(alpha=0.2, axis="x")
+
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=110)
+    plt.close(fig)
+
+
 def _run_fixture(fixture: Fixture, default: dict[str, Any]) -> dict[str, Any]:
     """Load one fixture and measure every variant over it."""
     # Same load path as common.module_runner: raw JSON sequence -> from_dict.
@@ -596,9 +686,14 @@ def _run_fixture(fixture: Fixture, default: dict[str, Any]) -> dict[str, Any]:
     changed = {name: _changed_keys(runs[name], full) for name in _NOTES}
 
     clip_len = inputs[-1].timestamp if inputs else 0.0
+    try:
+        shown_path = fixture.path.relative_to(ROOT).as_posix()
+    except ValueError:
+        shown_path = fixture.path.as_posix()         # a track saved outside the repo
     return {
-        "input": fixture.path.relative_to(ROOT).as_posix(),
-        "input_is_synthetic": True,
+        "input": shown_path,
+        "input_is_synthetic": fixture.synthetic,
+        "labelled": fixture.labelled,
         "headline": fixture.headline,
         "caveat": fixture.caveat,
         "frames": len(inputs),
@@ -612,11 +707,84 @@ def _run_fixture(fixture: Fixture, default: dict[str, Any]) -> dict[str, Any]:
         "changed_metrics": changed,
         "inert_mechanisms": [n for n, keys in changed.items() if not keys],
         "configurations": runs,
+        "_inputs": inputs,                   # plot only; stripped before JSON
     }
 
 
-def main() -> int:
-    missing = [f for f in _fixtures() if not f.path.exists()]
+def _recorded_fixture(path: Path, label: str | None, onset: float,
+                      episodes: str | None) -> Fixture:
+    """A real run saved by `alarm_demo.py --save-temporal`, as a fixture.
+
+    A live camera cannot be rerun seven times with seven configurations -- the
+    driver blinks differently every time. So the run is captured once, and the
+    comparison is replayed over that recording offline. Same input for every
+    configuration, which is the only way the difference means anything.
+    """
+    spans = tuple(_parse_spans(episodes)) if episodes else ()
+    return Fixture(
+        name=label or path.stem,
+        path=path,
+        closure_onset_s=onset,
+        genuine_spans=spans,
+        headline=f"A recorded run of the real pipeline, replayed from `{path.name}`.",
+        caveat=(
+            "Real pixels, so the synthetic caveat does not apply -- but "
+            + ("the episodes below were supplied by hand on the command line, so "
+               "they are only as good as the person who typed them."
+               if spans else
+               "with no ground truth nothing here can be graded for accuracy. "
+               "What it does show is how each configuration behaves on the same "
+               "real input.")
+        ),
+        synthetic=False,
+        labelled=bool(spans),
+    )
+
+
+def _parse_spans(spec: str) -> list[tuple[float, float]]:
+    out: list[tuple[float, float]] = []
+    for chunk in spec.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        a, _, b = chunk.partition("-")
+        start, end = float(a), float(b)
+        if end <= start:
+            raise SystemExit(f"--episodes: '{chunk}' ends at or before it starts")
+        out.append((start, end))
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Compare every SG-5 configuration over identical input.")
+    ap.add_argument("--fixture", type=Path, default=None, metavar="PATH",
+                    help="also compare over a recorded track from "
+                         "`alarm_demo.py --save-temporal` (a real run)")
+    ap.add_argument("--label", default=None, help="name for that recorded track")
+    ap.add_argument("--onset", type=float, default=0.0,
+                    help="second the drowsy episode began, if you noted it")
+    ap.add_argument("--episodes", default=None, metavar='"a-b,c-d"',
+                    help="genuine drowsy episodes you noted; without them false "
+                         "alarms cannot be counted and read n/a")
+    ap.add_argument("--only-fixture", action="store_true",
+                    help="skip the built-in fixtures and use --fixture alone")
+    ap.add_argument("--no-plot", action="store_true", help="skip the PNGs")
+    args = ap.parse_args(argv)
+
+    fixtures = () if args.only_fixture else _fixtures()
+    if args.fixture:
+        if not args.fixture.exists():
+            print(f"input not found: {args.fixture}", file=sys.stderr)
+            return 2
+        fixtures = (*fixtures, _recorded_fixture(args.fixture, args.label,
+                                                 args.onset, args.episodes))
+    if not fixtures:
+        print("nothing to compare: --only-fixture needs --fixture", file=sys.stderr)
+        return 2
+
+    missing = [f for f in fixtures if not f.path.exists()]
     if missing:
         for fixture in missing:
             hint = ("python interfaces/mock/generate_mocks.py"
@@ -626,7 +794,7 @@ def main() -> int:
         return 2
 
     default = load_config(DEFAULT_CONFIG)
-    blocks = {f.name: _run_fixture(f, default) for f in _fixtures()}
+    blocks = {f.name: _run_fixture(f, default) for f in fixtures}
 
     inert_everywhere = [n for n in _NOTES
                         if all(n in b["inert_mechanisms"] for b in blocks.values())]
@@ -640,6 +808,25 @@ def main() -> int:
         "inert_on_every_fixture": inert_everywhere,
         "fixtures": blocks,
     }
+
+    plots: list[Path] = []
+    if not args.no_plot:
+        for name, block in blocks.items():
+            out = OUT_JSON.parent / f"ablation_{name}.png"
+            try:
+                _plot_fixture(block, block["_inputs"], out)
+                plots.append(out)
+            except ImportError:
+                print("(matplotlib missing -- tables only; "
+                      "pip install -r requirements.txt)", file=sys.stderr)
+                break
+
+    # The per-frame tracks and the loaded inputs exist for the plots only. They
+    # would add megabytes of noise to a report meant to be read and diffed.
+    for block in blocks.values():
+        block.pop("_inputs", None)
+        for run in block["configurations"].values():
+            run.pop("_track", None)
 
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(report, indent=1) + "\n", encoding="utf-8")
@@ -656,13 +843,15 @@ def main() -> int:
                   f"in_episode={_fmt(run['first_episode_alert_s']):<8} "
                   f"cleared={_fmt(run['last_alert_cleared_s']):<8} "
                   f"alert_frames={run['frames_in_state']['ALERT']:<4} "
-                  f"false_alarms={run['false_alarm_frames']}")
+                  f"false_alarms={_count(run['false_alarm_frames'])}")
         inert = block["inert_mechanisms"]
         print(f"    inert here: {', '.join(inert) if inert else 'none'}")
     print(f"\n  inert on EVERY fixture: "
           f"{', '.join(inert_everywhere) if inert_everywhere else 'none'}")
     print(f"  wrote  : {OUT_JSON}")
     print(f"  wrote  : {OUT_MD}")
+    for path in plots:
+        print(f"  plot   : {path}")
     return 0
 
 

@@ -53,7 +53,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from common.config import load_config  # noqa: E402
-from common.jsonio import read_sequence  # noqa: E402
+from common.jsonio import read_sequence, write_sequence  # noqa: E402
 from interfaces.contracts import DrowsinessState  # noqa: E402
 from module_sg5.src.decision import DrowsinessDecider  # noqa: E402
 
@@ -389,7 +389,8 @@ def replay_temporal(path: Path, config: dict, beeper: Beeper, realtime: bool,
 
 def replay_pipeline(source_spec: str, beeper: Beeper, limit: int | None,
                     recorder: Recorder | None = None, display: bool = False,
-                    status_every: float = 0.0) -> dict:
+                    status_every: float = 0.0,
+                    temporal_out: list | None = None) -> dict:
     """Drive the whole SG-1..SG-5 pipeline and alarm on its decisions.
 
     ``mock`` replays the synthetic driver and needs nothing installed. A video path
@@ -421,6 +422,11 @@ def replay_pipeline(source_spec: str, beeper: Beeper, limit: int | None,
         decision = frame_output.decision
         temporal = frame_output.temporal
         beeper.set_state(decision.state)
+
+        if temporal_out is not None:
+            # Keep SG-4's actual output so the comparison can be replayed over
+            # this real run later. A live camera cannot be rerun seven times.
+            temporal_out.append(temporal)
 
         if recorder is not None:
             recorder.write(decision, temporal, frame_output.face,
@@ -477,12 +483,17 @@ def main(argv: list[str] | None = None) -> int:
                     help="show the video with the debug overlay (--source runs only)")
     ap.add_argument("--status-every", type=float, default=0.0, metavar="SECONDS",
                     help="print a rolling one-line readout this often (try 0.5 on a live run)")
+    ap.add_argument("--save-temporal", type=Path, default=None, metavar="PATH",
+                    help="save SG-4's output as a replayable track, so tools/ablation.py "
+                         "can compare every configuration over THIS run (--source only)")
     args = ap.parse_args(argv)
 
     if args.source and args.input:
         ap.error("pass --input (fixture replay) or --source (full pipeline), not both")
     if args.display and not args.source:
         ap.error("--display needs --source: a fixture replay has no video to draw on")
+    if args.save_temporal and not args.source:
+        ap.error("--save-temporal needs --source: replaying a track cannot produce a new one")
 
     backend = "silent" if args.silent else args.backend
     realtime = not args.fast
@@ -498,13 +509,14 @@ def main(argv: list[str] | None = None) -> int:
         print("[alarm] backend=bell: terminal bell only; your terminal may ignore it.\n")
 
     recorder = Recorder(args.log)
+    temporal_out: list | None = [] if args.save_temporal else None
     stats = {"frames": 0, "episodes": 0, "span_s": 0.0}
     interrupted = False
     try:
         with beeper:
             if args.source:
                 stats = replay_pipeline(args.source, beeper, args.limit, recorder,
-                                        args.display, args.status_every)
+                                        args.display, args.status_every, temporal_out)
             else:
                 stats = replay_temporal(args.input or DEFAULT_INPUT, config, beeper,
                                         realtime, args.limit, recorder)
@@ -516,6 +528,10 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         beeper.close()                      # never leave the alarm sounding
         recorder.close()
+        # Written in `finally` so a run stopped with Ctrl-C or 'q' -- which is
+        # how a live run normally ends -- still leaves a replayable track.
+        if temporal_out:
+            write_sequence(args.save_temporal, temporal_out)
 
     print(f"\n{stats['frames']} frames, {stats['span_s']:.2f} s of input")
     print(f"ALERT episodes      : {stats['episodes']}")
@@ -535,6 +551,10 @@ def main(argv: list[str] | None = None) -> int:
               "unreachable-WARN\nproblem (README section 7, issue #13), not a fault here.")
 
     recorder.report()
+    if args.save_temporal and temporal_out:
+        print(f"\nSG-4 track    -> {args.save_temporal}  ({len(temporal_out)} frames)")
+        print("  compare every configuration over this real run:")
+        print(f"  python module_sg5/tools/ablation.py --fixture {args.save_temporal}")
     if args.log:
         print(f"per-frame log -> {args.log}")
         print("  open it in Excel and sort/filter on eye_state, closure_s or state to see "

@@ -8,6 +8,7 @@
   "mock_temporal": {
    "input": "interfaces/mock/mock_temporal.json",
    "input_is_synthetic": true,
+   "labelled": true,
    "headline": "The shared reference input every module develops against.",
    "caveat": "The score here rises monotonically and cleanly: no jitter, no boundary hovering, confidence never below 0.667 against a 0.50 gate, and the clip ends mid-alert. Most mechanisms are never put in charge of a decision, so most rows read `unchanged`. That is a statement about this fixture, not a verdict on the mechanisms -- and it is why the stress track exists.",
    "frames": 300,
@@ -74,8 +75,8 @@
       "ALERT": 112
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0038,
-     "latency_p95_ms": 0.0044,
+     "latency_mean_ms": 0.0054,
+     "latency_p95_ms": 0.0064,
      "decider_alert_count": 1,
      "name": "full"
     },
@@ -103,8 +104,8 @@
       "ALERT": 112
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.0041,
+     "latency_mean_ms": 0.0053,
+     "latency_p95_ms": 0.0073,
      "decider_alert_count": 1,
      "name": "no_hysteresis"
     },
@@ -132,8 +133,8 @@
       "ALERT": 125
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.004,
+     "latency_mean_ms": 0.0052,
+     "latency_p95_ms": 0.0059,
      "decider_alert_count": 1,
      "name": "no_dwell"
     },
@@ -161,8 +162,8 @@
       "ALERT": 112
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.004,
+     "latency_mean_ms": 0.005,
+     "latency_p95_ms": 0.0056,
      "decider_alert_count": 1,
      "name": "no_latch"
     },
@@ -190,8 +191,8 @@
       "ALERT": 112
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0037,
-     "latency_p95_ms": 0.004,
+     "latency_mean_ms": 0.0059,
+     "latency_p95_ms": 0.0091,
      "decider_alert_count": 1,
      "name": "no_override"
     },
@@ -219,8 +220,8 @@
       "ALERT": 112
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0038,
-     "latency_p95_ms": 0.006,
+     "latency_mean_ms": 0.0087,
+     "latency_p95_ms": 0.0161,
      "decider_alert_count": 1,
      "name": "no_confidence_gate"
     },
@@ -248,8 +249,8 @@
       "ALERT": 125
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.0041,
+     "latency_mean_ms": 0.0054,
+     "latency_p95_ms": 0.0073,
      "decider_alert_count": 1,
      "name": "rules_only"
     }
@@ -258,6 +259,7 @@
   "stress_track": {
    "input": "module_sg5/fixtures/stress_track.json",
    "input_is_synthetic": true,
+   "labelled": true,
    "headline": "Built by module_sg5/fixtures/stress_track.py to put each mechanism in a situation where it decides something.",
    "caveat": "Engineered to provoke, which makes it LESS like a real driver, not more. Every number here is about mechanism behaviour. The two fields set by design rather than derived are stated in the generator's docstring: `drowsy_score` is the fixture's control variable, and `low_coverage` reports a deliberately thin, unfilled window.",
    "frames": 975,
@@ -426,8 +428,8 @@
       "ALERT": 153
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0037,
-     "latency_p95_ms": 0.0045,
+     "latency_mean_ms": 0.0057,
+     "latency_p95_ms": 0.0101,
      "decider_alert_count": 2,
      "name": "full",
      "alert_frames_by_segment": {
@@ -466,8 +468,8 @@
       "ALERT": 133
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.0042,
+     "latency_mean_ms": 0.0056,
+     "latency_p95_ms": 0.0076,
      "decider_alert_count": 2,
      "name": "no_hysteresis",
      "alert_frames_by_segment": {
@@ -506,8 +508,8 @@
       "ALERT": 227
      },
      "false_alarm_frames": 75,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.0041,
+     "latency_mean_ms": 0.0055,
+     "latency_p95_ms": 0.0089,
      "decider_alert_count": 5,
      "name": "no_dwell",
      "alert_frames_by_segment": {
@@ -546,8 +548,8 @@
       "ALERT": 131
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.0043,
+     "latency_mean_ms": 0.0066,
+     "latency_p95_ms": 0.0108,
      "decider_alert_count": 3,
      "name": "no_latch",
      "alert_frames_by_segment": {
@@ -586,8 +588,8 @@
       "ALERT": 100
      },
      "false_alarm_frames": 0,
-     "latency_mean_ms": 0.0037,
-     "latency_p95_ms": 0.0042,
+     "latency_mean_ms": 0.0053,
+     "latency_p95_ms": 0.0061,
      "decider_alert_count": 1,
      "name": "no_override",
      "alert_frames_by_segment": {
@@ -626,8 +628,8 @@
       "ALERT": 273
      },
      "false_alarm_frames": 120,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.0042,
+     "latency_mean_ms": 0.0057,
+     "latency_p95_ms": 0.0074,
      "decider_alert_count": 3,
      "name": "no_confidence_gate",
      "alert_frames_by_segment": {
@@ -666,8 +668,8 @@
       "ALERT": 114
      },
      "false_alarm_frames": 4,
-     "latency_mean_ms": 0.0036,
-     "latency_p95_ms": 0.0042,
+     "latency_mean_ms": 0.0052,
+     "latency_p95_ms": 0.0061,
      "decider_alert_count": 7,
      "name": "rules_only",
      "alert_frames_by_segment": {

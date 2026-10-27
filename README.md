@@ -99,12 +99,34 @@ ruff check .
 pytest -q
 ```
 
+## Running it from the camera, not fake data
+| What you want | Command |
+|---|---|
+| Hear the alarm, live | `python module_sg5/tools/alarm_demo.py --source 0` |
+| See the video with the overlay | `python module_sg5/tools/alarm_demo.py --source 0 --display` |
+| Record the numbers while it runs | add `--status-every 0.5 --log module_sg5/results/live_02.csv` |
+| Keep the run for later comparison | add `--save-temporal module_sg5/results/track_live_02.json` |
+| Draw the graphs afterwards | `python module_sg5/tools/plot_run.py --log module_sg5/results/live_02.csv` |
+| Compare all seven configs on that run | `python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json --label live_02` |
+| The whole pipeline, live, no sound | `python integration/run_pipeline.py --source 0 --display` |
+| Use a recorded video instead | swap `--source 0` for `--source path/to/clip.mp4` |
+
+`--source 0` is your first camera. `python datasets/scripts/record_clip.py --list-devices`
+lists them if you have more than one. Press `q` in the window to stop — the summary and the
+saved files are still written.
+
 ## The comparison — what each safeguard is worth
 ```bash
-python module_sg5/tools/ablation.py     # -> module_sg5/results/ablation.md
+python module_sg5/tools/ablation.py     # -> module_sg5/results/ablation.md + PNGs
 ```
 Runs the decision logic seven times: once whole, once with each safeguard switched off, and
-once with all of them off. Results on the purpose-built stress fixture:
+once with all of them off. It writes the tables **and a picture per fixture**
+(`module_sg5/results/ablation_*.png`) — the score on top, one state row per configuration
+below, so you can see the override's alarm vanish and the dwell timer's false ones appear.
+
+You can't rerun a live camera seven times — you blink differently every take, so the
+configurations wouldn't see the same input. Record once with `--save-temporal`, then point
+`--fixture` at that file. Results on the purpose-built stress fixture:
 
 | Config | State changes | Alarms | False alarms |
 |---|:--:|:--:|:--:|

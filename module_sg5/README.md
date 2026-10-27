@@ -210,9 +210,48 @@ standard library — no runtime dependency, and the shipped model is auditable p
 ## 6. The comparison — what each safety brake is worth
 
 ```bash
-python module_sg5/tools/ablation.py          # -> results/ablation.md and .json
+python module_sg5/tools/ablation.py          # -> results/ablation.md, .json and PNGs
 python module_sg5/fixtures/stress_track.py   # regenerate the stress fixture
 ```
+
+Each run writes **one PNG per fixture** — `results/ablation_<fixture>.png` — with the score
+on top and one state row per configuration underneath. The tables say *what* changed; the
+picture says *where*. You can see the override's red block disappear in the `no_override`
+row, and the dwell timer's spikes appear in `no_dwell`.
+
+### Comparing configurations on a real camera run
+
+A live camera **cannot be rerun seven times** — you blink differently every take, so the
+configurations would not be seeing the same input and the difference would mean nothing.
+So capture the run once, then replay the comparison over the recording:
+
+```bash
+# 1. record a real run, saving SG-4's actual output
+python module_sg5/tools/alarm_demo.py --source 0 --display --status-every 0.5 \
+       --log module_sg5/results/live_02.csv \
+       --save-temporal module_sg5/results/track_live_02.json
+
+# 2. compare every configuration over THAT run
+python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json \
+       --label live_02
+```
+
+`--save-temporal` writes SG-4's per-frame output in the same format as the fixtures, so the
+ablation treats your recording as one more input. Ctrl-C and `q` still save it.
+
+If you noted when you were genuinely drowsy, pass it and false alarms become countable:
+
+```bash
+python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json \
+       --label live_02 --onset 12.4 --episodes "12.4-14.1,28.0-28.3"
+```
+
+Without `--episodes` the input is unlabelled, so false alarms and episode lag read **`n/a`**
+rather than `0` — "we did not count" and "we counted none" are different claims. Everything
+that compares one configuration against another on identical input is still valid, because
+that is what this study actually measures.
+
+Use `--only-fixture` to skip the built-in fixtures and report on your recording alone.
 
 It runs the decider seven times — once whole, once with each mechanism disabled, once
 with all of them off (`configs/experiment_a.yaml`, the documented backup) — over **two**
@@ -322,6 +361,24 @@ Committed, so they can be shown without re-running anything.
 | [results/live_01_episode4.png](results/live_01_episode4.png) | Zoom on the worst episode, 67–90 s |
 | [results/live_01.csv](results/live_01.csv) | The raw per-frame log behind both |
 | [results/live_01_findings.md](results/live_01_findings.md) | The written-up findings |
+| [results/ablation_stress_track.png](results/ablation_stress_track.png) | All seven configurations side by side |
+| [results/ablation_mock_temporal.png](results/ablation_mock_temporal.png) | The same on the shared mock |
+
+### Everything, from the camera instead of fixtures
+
+| What | Command |
+|---|---|
+| Hear it, live | `python module_sg5/tools/alarm_demo.py --source 0` |
+| Watch it, live | `python module_sg5/tools/alarm_demo.py --source 0 --display` |
+| Log it, live | add `--status-every 0.5 --log module_sg5/results/live_02.csv` |
+| Save it for comparison | add `--save-temporal module_sg5/results/track_live_02.json` |
+| Graph it afterwards | `python module_sg5/tools/plot_run.py --log module_sg5/results/live_02.csv` |
+| Compare configs on it | `python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json --label live_02` |
+| Whole pipeline, live, no sound | `python integration/run_pipeline.py --source 0 --display` |
+| A recorded video file instead | swap `--source 0` for `--source path/to/clip.mp4` |
+
+`--source 0` is the first camera; use `1`, `2`… for others, or
+`python datasets/scripts/record_clip.py --list-devices` to find out which is which.
 
 Four stacked panels on a shared clock: **EAR** with SG-2's trigger band and closed-eye
 shading; **closure duration** against the 1.20 s override line; **PERCLOS and
