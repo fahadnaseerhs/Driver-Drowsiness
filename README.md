@@ -22,6 +22,49 @@ a sentence a human can read.
 > driver switches the whole system off, and then it protects nobody. This module owns
 > risk R6.
 
+> **New here? Read [module_sg5/GUIDE.md](module_sg5/GUIDE.md)** — the conceptual guide:
+> both algorithms, setup, the live camera, switching parameters, reading the graphs.
+
+## Get the project: clone, set up, pull SG-5
+**1. Clone the repository** (once per machine):
+```bash
+git clone https://github.com/fahadnaseerhs/Driver-Drowsiness.git
+cd Driver-Drowsiness
+```
+
+**2. Set up a virtual environment** (Python 3.10, the Jetson's version) and install:
+```bash
+python -m venv .venv
+.venv\Scripts\activate             # Windows (PowerShell: .venv\Scripts\Activate.ps1)
+source .venv/bin/activate          # macOS / Linux -- run only the line for your OS
+pip install -r requirements-dev.txt
+```
+Activate the environment again every time you open a new terminal.
+
+**3. Pull the SG-5 branch:**
+```bash
+git fetch origin
+git checkout sg5/fusion-rules
+git pull origin sg5/fusion-rules
+```
+
+**4. Check it works:**
+```bash
+python integration/run_pipeline.py --source mock --check-scenario
+pytest module_sg5/tests -q
+```
+
+The other sub-groups follow the same steps with their own branch in step 3:
+
+| Sub-group | Branch |
+|---|---|
+| SG-1 | `sg1/landmark-detector` |
+| SG-2 | `sg2/eye-threshold` |
+| SG-3 | `sg3/yawn-cues` |
+| SG-4 | `sg4/temporal-window` |
+| **SG-5** | **`sg5/fusion-rules`** |
+| SG-6 | `sg6/jetson-integration` |
+
 ## How to pull and push
 ```bash
 git checkout sg5/fusion-rules    # our branch -- never work on main
@@ -92,6 +135,7 @@ python module_sg5/run.py                                              # the modu
 python module_sg5/run.py --config module_sg5/configs/experiment_a.yaml  # the backup rules
 python integration/run_pipeline.py --source mock --check-scenario     # the whole system
 pytest module_sg5/tests -q                                            # 28 tests
+python module_sg5/tools/recovery_check.py   # does the alarm clear? exits 1 = FAIL, expected (#16)
 ```
 Quick self-check before you push:
 ```bash
@@ -107,7 +151,7 @@ pytest -q
 | Record the numbers while it runs | add `--status-every 0.5 --log module_sg5/results/live_02.csv` |
 | Keep the run for later comparison | add `--save-temporal module_sg5/results/track_live_02.json` |
 | Draw the graphs afterwards | `python module_sg5/tools/plot_run.py --log module_sg5/results/live_02.csv` |
-| Compare all seven configs on that run | `python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json --label live_02` |
+| Compare all seven configs on that run | `python module_sg5/tools/ablation.py --only-fixture --fixture module_sg5/results/track_live_02.json --label live_02` |
 | The whole pipeline, live, no sound | `python integration/run_pipeline.py --source 0 --display` |
 | Use a recorded video instead | swap `--source 0` for `--source path/to/clip.mp4` |
 
@@ -227,7 +271,8 @@ Reads `TemporalResult`, outputs `DecisionResult` (state + alert + reason + laten
 the safety-critical output. Build against `mock_temporal.json`. Edit only `module_sg5/`.
 
 ---
-*This is the `sg5/fusion-rules` branch landing README. Detailed module design, with all the
+*This is the `sg5/fusion-rules` branch landing README. Newcomer guide:
+[module_sg5/GUIDE.md](module_sg5/GUIDE.md). Detailed module design, with all the
 measured numbers: `module_sg5/README.md`. Demo script: `module_sg5/DEMO.md`. Plan:
 `module_sg5/ALGORITHM_PLAN.md`. Plain-language log: `Driver Drowsiness/Fahad Naseer/SG-5
 Midterm Log.md`. Full project plan: `Driver Drowsiness/Planning/Big-6 Plan.md`.*

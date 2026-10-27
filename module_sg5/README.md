@@ -9,6 +9,7 @@ actuation, SG-6).
 
 | | |
 |---|---|
+| **Conceptual guide — start here** | [GUIDE.md](GUIDE.md) |
 | Plan and algorithm selection | [ALGORITHM_PLAN.md](ALGORITHM_PLAN.md) |
 | Demo script — what to run and say | [DEMO.md](DEMO.md) |
 | Comparison evidence | [results/ablation.md](results/ablation.md) |
@@ -38,7 +39,48 @@ system-level evaluation."*
 
 ---
 
-## 2. Working with the repository (pull and push)
+## 2. Working with the repository (clone, set up, pull and push)
+
+### First time: clone, set up, pull SG-5
+
+**1. Clone the repository** (once per machine):
+
+```bash
+git clone https://github.com/fahadnaseerhs/Driver-Drowsiness.git
+cd Driver-Drowsiness
+```
+
+**2. Set up a virtual environment** (Python 3.10, the Jetson's version) and install:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate             # Windows (PowerShell: .venv\Scripts\Activate.ps1)
+source .venv/bin/activate          # macOS / Linux -- run only the line for your OS
+pip install -r requirements-dev.txt
+```
+
+Activate the environment again every time you open a new terminal.
+
+**3. Pull the SG-5 branch:**
+
+```bash
+git fetch origin
+git checkout sg5/fusion-rules
+git pull origin sg5/fusion-rules
+```
+
+**4. Check it works:**
+
+```bash
+python integration/run_pipeline.py --source mock --check-scenario
+pytest module_sg5/tests -q
+```
+
+Other sub-groups use the same steps with their own branch in step 3: SG-1
+`sg1/landmark-detector`, SG-2 `sg2/eye-threshold`, SG-3 `sg3/yawn-cues`, SG-4
+`sg4/temporal-window`, SG-6 `sg6/jetson-integration`.
+
+### Every day after that
 
 **Before you start work**, get everyone else's changes:
 
@@ -163,6 +205,7 @@ python module_sg5/run.py --dump module_sg5/results/run01.json
 python module_sg5/run.py --config module_sg5/configs/experiment_a.yaml   # the backup rules
 python integration/run_pipeline.py --source mock --check-scenario        # end to end
 pytest module_sg5/tests -q                                 # 28 tests
+python module_sg5/tools/recovery_check.py                  # alarm-clearing gate; exits 1 by design (§9.1)
 ```
 
 ---
@@ -232,7 +275,7 @@ python module_sg5/tools/alarm_demo.py --source 0 --display --status-every 0.5 \
        --save-temporal module_sg5/results/track_live_02.json
 
 # 2. compare every configuration over THAT run
-python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json \
+python module_sg5/tools/ablation.py --only-fixture --fixture module_sg5/results/track_live_02.json \
        --label live_02
 ```
 
@@ -242,7 +285,7 @@ ablation treats your recording as one more input. Ctrl-C and `q` still save it.
 If you noted when you were genuinely drowsy, pass it and false alarms become countable:
 
 ```bash
-python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json \
+python module_sg5/tools/ablation.py --only-fixture --fixture module_sg5/results/track_live_02.json \
        --label live_02 --onset 12.4 --episodes "12.4-14.1,28.0-28.3"
 ```
 
@@ -251,7 +294,10 @@ rather than `0` — "we did not count" and "we counted none" are different claim
 that compares one configuration against another on identical input is still valid, because
 that is what this study actually measures.
 
-Use `--only-fixture` to skip the built-in fixtures and report on your recording alone.
+`--only-fixture` skips the built-in fixtures, reports on your recording alone, and writes
+`results/ablation_<label>.md` / `.json` / `.png`, leaving the committed `ablation.*`
+untouched. `--out BASENAME` picks the output name yourself. Without either, the run
+regenerates the committed report with your recording appended.
 
 It runs the decider seven times — once whole, once with each mechanism disabled, once
 with all of them off (`configs/experiment_a.yaml`, the documented backup) — over **two**
@@ -373,7 +419,7 @@ Committed, so they can be shown without re-running anything.
 | Log it, live | add `--status-every 0.5 --log module_sg5/results/live_02.csv` |
 | Save it for comparison | add `--save-temporal module_sg5/results/track_live_02.json` |
 | Graph it afterwards | `python module_sg5/tools/plot_run.py --log module_sg5/results/live_02.csv` |
-| Compare configs on it | `python module_sg5/tools/ablation.py --fixture module_sg5/results/track_live_02.json --label live_02` |
+| Compare configs on it | `python module_sg5/tools/ablation.py --only-fixture --fixture module_sg5/results/track_live_02.json --label live_02` |
 | Whole pipeline, live, no sound | `python integration/run_pipeline.py --source 0 --display` |
 | A recorded video file instead | swap `--source 0` for `--source path/to/clip.mp4` |
 
@@ -559,9 +605,13 @@ On `mock_temporal.json`, 300 frames, Windows AMD64, CPython 3.12:
 | State transitions over 10 s | 1 — `OK → ALERT`, and it **never clears**; see §9.1 |
 | Contract violations | 0 |
 
-> Re-measured 2026-10-26. Earlier figures in this table (6.20 s / 1.00 s lag / 2
-> transitions) were **wrong**. One transition is not evidence of stability — it is the
-> never-clearing alarm showing up as a suspiciously tidy number.
+> Re-measured 2026-10-26 on `mock_temporal.json`, so 6.27 s / 1.07 s lag is right for it.
+> `run_pipeline.py --source mock` and `recovery_check.py` drive the real SG-4 from
+> `mock_eye.json` + `mock_yawn.json` instead, and alarm at **6.20 s / 1.00 s lag**. Both are
+> correct: they're different inputs, not a disagreement — see [GUIDE.md](GUIDE.md) §6.
+> What *was* wrong was the earlier "2 state transitions (no chattering)": on both inputs
+> there is **1** transition, `OK → ALERT`, and the run ends in `ALERT`. That tidy number is
+> the never-clearing alarm in disguise.
 
 On the live camera run (177 s, 4257 frames): 98.7 % face detection, **24.0 fps effective**,
 0 contract violations, 9 ALERT episodes.
