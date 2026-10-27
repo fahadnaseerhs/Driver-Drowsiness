@@ -16,7 +16,7 @@ cd "C:\Users\USER\OneDrive\Desktop\Driver Drowniness"
 python -m pytest module_sg5/tests -q
 ```
 
-22 tests, all green. If anything is red, **stop and fix it before the demo** — a failing
+28 tests, all green. If anything is red, **stop and fix it before the demo** — a failing
 test on screen costs more than the feature it covers.
 
 Have these open in tabs, not scrolling for them live:
@@ -123,6 +123,26 @@ Also volunteer the costs, because they asked for comparative rationale, not a sa
 > deliberate trades against nuisance alerts.
 
 ---
+
+## 3b. Let them hear it (45 s)
+
+```bash
+python module_sg5/tools/alarm_demo.py
+```
+
+Turn the volume up first. 32 s of input, paced in real time: the state goes
+`OK → WARN → OK → ALERT → OK → WARN → ALERT → OK`, so they hear the chime, then the
+alarm, then the alarm **stop**.
+
+> `ALERT` is a pulsing 1 kHz beep, not a continuous tone — a continuous tone is what a
+> driver reaches over and switches off, which is the failure mode this whole module exists
+> to avoid. `WARN` is a single softer chime on entry. By the contract SG-6 owns the real
+> buzzer; this is the same decision stream through a laptop speaker, so it also specifies
+> what SG-6 has to build.
+
+If asked *"does this work on a live camera?"* — yes, `--source 0`, and it needs SG-1 and a
+webcam. Say plainly whether you have tested that on this machine. **Do not** run the camera
+path live for the first time in the demo.
 
 ## 4. A bug we found and have not fixed (1 min)
 
