@@ -1,0 +1,41 @@
+# SG-5 experiment A -- the "documented backup": plain rule-based thresholds.
+#
+# This is the degenerate fallback named in ALGORITHM_PLAN.md section 0: what we
+# fall back to if the hysteresis FSM is ever suspected of hiding a bug. It is
+# also the ablation baseline, and that is its real job here. The FSM in
+# decision.py costs five extra mechanisms and a page of state; the only honest
+# defence of that complexity is a measured comparison against the version
+# without it. This file IS that version -- every nuisance-alert brake switched
+# off, so what the brakes buy shows up as a difference in the numbers
+# (results/ablation.md) rather than as an opinion in a README.
+#
+# Nothing here is a recommendation. Running the system on this config would
+# re-open risk R6 (false alerts make the driver switch the system off).
+
+warn_on:  0.45      # unchanged -- the rising thresholds define the operating
+alert_on: 0.70      # point, and the baseline must share it or the comparison
+                    # measures threshold choice instead of the mechanisms.
+warn_off: 0.45      # DISABLES HYSTERESIS: falling == rising, so there is no
+alert_off: 0.70     # dead band. A score sitting on a boundary flips state on
+                    # whichever side of it each frame's noise lands. equal
+                    # values are legal -- decision.py only requires
+                    # warn_off <= warn_on and alert_off <= alert_on.
+
+min_dwell_s: 0.0    # DISABLES THE DWELL TIMER: a candidate state is adopted on
+                    # the frame it first appears, so one noisy frame is enough
+                    # to raise an alarm. Removes what
+                    # test_single_spike_does_not_raise_an_alert pins.
+
+alert_latch_s: 0.0  # DISABLES LATCHING: ALERT is dropped the instant the score
+                    # falls back under alert_off, so the alarm stutters as the
+                    # driver's eyes flick open, and a live ALERT is no longer
+                    # held through an observation gap.
+
+closure_override_s: 1.20  # KEPT at the default. The sustained-closure override
+                          # is not a nuisance-alert brake -- it is the opposite,
+                          # a hard escalation for an emergency. Removing it here
+                          # would make the baseline *less* likely to alert and
+                          # would confound the comparison; it is ablated on its
+                          # own ("no_override") inside tools/ablation.py.
+min_confidence: 0.50      # KEPT at the default, same reasoning: the confidence
+                          # gate is ablated separately ("no_confidence_gate").

@@ -10,6 +10,18 @@ How to do them → [[How To Do These Tasks]]. Questions → [[Chats/_index|Chats
 > **Week 5**). The Researcher keeps it current: open = `[ ]`, done = `[x]`.
 > Status as of **2026-10-07**.
 
+## Midterm Stage 1 (added 2026-10-26)
+
+Rubric and per-phase plan: [[../../module_sg5/ALGORITHM_PLAN.md|SG-5 Algorithm Plan]] ·
+message to send the team: [[Planning/Midterm Message To Team]]
+
+- [x] Milestone **Midterm Stage 1 (Week 8)** created; issues #1–#15 attached
+- [x] Project board checked — all 15 issues on it; #5 and #9 moved to *In Progress*
+- [ ] **#13 blocker** — `WARN` reachable or removed; needs SG-6's actuation answer
+- [ ] **#14** — interface/dependency tracking; every sub-group answers in a comment
+- [ ] **#15** — clean-clone check: dependencies + run instructions, all 6 modules
+- [ ] Everyone self-assigns their issue and sets its status (3 of the 10 marks in B)
+
 ## Blocking decisions (owner: team lead)
 - [ ] Assign an owner to **SG-6** (Jetson & integration)
 - [x] Merge `fix/stuck-alarm` into `main` (SG-5 owner approved; pushed as 8c9c079). Sub-group branches should now `git merge origin/main`.
@@ -17,9 +29,9 @@ How to do them → [[How To Do These Tasks]]. Questions → [[Chats/_index|Chats
 ## Researcher / Coder active work
 - [x] Coder: real-data evaluation harness (PASS; MERGED to main 2683fa4, pushed)
 - [x] Researcher: Week 6 plan — APPROVED (data source = live recording); see [[Planning/Week 6 Plan (APPROVED)]]
-- [x] Researcher: per-branch READMEs drafted in [[Planning/Branch Guides/SG-1 branch]] … SG-6 — [ ] still to distribute onto each branch
+- [x] Researcher: per-branch READMEs drafted AND distributed onto all 6 branches (pushed; detailed design kept as DESIGN.md)
 - [x] Researcher: [[Planning/Big-6 Plan]] + [[Planning/Week 6 Recommendation]] written
-- [ ] Researcher: put the To-Do on GitHub (Issues / Project board, +5 bonus)
+- [x] Researcher: GitHub Issues #1-#12 created (labelled; #11-#12 closed w/ evidence) — [ ] Project *board* needs `gh auth refresh -s project` then I add issues
 
 ## Per sub-group (each pair)
 

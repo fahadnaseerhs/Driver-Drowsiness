@@ -1,0 +1,688 @@
+{
+ "graded_accuracy": false,
+ "warning": "Synthetic input. These numbers describe MECHANISM BEHAVIOUR (chattering, spurious alerts, recovery, observation-gap handling) only. No graded accuracy figure may come from them -- see datasets/README.md.",
+ "study": "SG-5 Phase 1 ablation (ALGORITHM_PLAN.md section 5, task 1.3)",
+ "baseline_config": "module_sg5/configs/default.yaml",
+ "inert_on_every_fixture": [],
+ "fixtures": {
+  "mock_temporal": {
+   "input": "interfaces/mock/mock_temporal.json",
+   "input_is_synthetic": true,
+   "headline": "The shared reference input every module develops against.",
+   "caveat": "The score here rises monotonically and cleanly: no jitter, no boundary hovering, confidence never below 0.667 against a 0.50 gate, and the clip ends mid-alert. Most mechanisms are never put in charge of a decision, so most rows read `unchanged`. That is a statement about this fixture, not a verdict on the mechanisms -- and it is why the stress track exists.",
+   "frames": 300,
+   "invalid_frames": 0,
+   "clip_length_s": 9.9667,
+   "closure_onset_s": 5.2,
+   "genuine_spans_s": [
+    [
+     5.2,
+     9.9667
+    ]
+   ],
+   "segments": [],
+   "changed_metrics": {
+    "no_hysteresis": [],
+    "no_dwell": [
+     "transitions",
+     "first_alert_s",
+     "alert_lag_s",
+     "first_episode_alert_s",
+     "episode_lag_s",
+     "frames_in_state"
+    ],
+    "no_latch": [],
+    "no_override": [],
+    "no_confidence_gate": [],
+    "rules_only": [
+     "transitions",
+     "first_alert_s",
+     "alert_lag_s",
+     "first_episode_alert_s",
+     "episode_lag_s",
+     "frames_in_state"
+    ]
+   },
+   "inert_mechanisms": [
+    "no_hysteresis",
+    "no_latch",
+    "no_override",
+    "no_confidence_gate"
+   ],
+   "configurations": {
+    "full": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 1,
+     "alert_episodes": 1,
+     "first_alert_s": 6.2667,
+     "first_episode_alert_s": 6.2667,
+     "episode_lag_s": 1.0667,
+     "alert_lag_s": 1.0667,
+     "last_alert_cleared_s": null,
+     "frames_in_state": {
+      "OK": 188,
+      "WARN": 0,
+      "ALERT": 112
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0038,
+     "latency_p95_ms": 0.0044,
+     "decider_alert_count": 1,
+     "name": "full"
+    },
+    "no_hysteresis": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.45,
+      "alert_off": 0.7,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 1,
+     "alert_episodes": 1,
+     "first_alert_s": 6.2667,
+     "first_episode_alert_s": 6.2667,
+     "episode_lag_s": 1.0667,
+     "alert_lag_s": 1.0667,
+     "last_alert_cleared_s": null,
+     "frames_in_state": {
+      "OK": 188,
+      "WARN": 0,
+      "ALERT": 112
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.0041,
+     "decider_alert_count": 1,
+     "name": "no_hysteresis"
+    },
+    "no_dwell": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.0,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 2,
+     "alert_episodes": 1,
+     "first_alert_s": 5.8333,
+     "first_episode_alert_s": 5.8333,
+     "episode_lag_s": 0.6333,
+     "alert_lag_s": 0.6333,
+     "last_alert_cleared_s": null,
+     "frames_in_state": {
+      "OK": 163,
+      "WARN": 12,
+      "ALERT": 125
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.004,
+     "decider_alert_count": 1,
+     "name": "no_dwell"
+    },
+    "no_latch": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 0.0,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 1,
+     "alert_episodes": 1,
+     "first_alert_s": 6.2667,
+     "first_episode_alert_s": 6.2667,
+     "episode_lag_s": 1.0667,
+     "alert_lag_s": 1.0667,
+     "last_alert_cleared_s": null,
+     "frames_in_state": {
+      "OK": 188,
+      "WARN": 0,
+      "ALERT": 112
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.004,
+     "decider_alert_count": 1,
+     "name": "no_latch"
+    },
+    "no_override": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 999.0,
+      "min_confidence": 0.5
+     },
+     "transitions": 1,
+     "alert_episodes": 1,
+     "first_alert_s": 6.2667,
+     "first_episode_alert_s": 6.2667,
+     "episode_lag_s": 1.0667,
+     "alert_lag_s": 1.0667,
+     "last_alert_cleared_s": null,
+     "frames_in_state": {
+      "OK": 188,
+      "WARN": 0,
+      "ALERT": 112
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0037,
+     "latency_p95_ms": 0.004,
+     "decider_alert_count": 1,
+     "name": "no_override"
+    },
+    "no_confidence_gate": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.0
+     },
+     "transitions": 1,
+     "alert_episodes": 1,
+     "first_alert_s": 6.2667,
+     "first_episode_alert_s": 6.2667,
+     "episode_lag_s": 1.0667,
+     "alert_lag_s": 1.0667,
+     "last_alert_cleared_s": null,
+     "frames_in_state": {
+      "OK": 188,
+      "WARN": 0,
+      "ALERT": 112
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0038,
+     "latency_p95_ms": 0.006,
+     "decider_alert_count": 1,
+     "name": "no_confidence_gate"
+    },
+    "rules_only": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.45,
+      "alert_off": 0.7,
+      "min_dwell_s": 0.0,
+      "alert_latch_s": 0.0,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 2,
+     "alert_episodes": 1,
+     "first_alert_s": 5.8333,
+     "first_episode_alert_s": 5.8333,
+     "episode_lag_s": 0.6333,
+     "alert_lag_s": 0.6333,
+     "last_alert_cleared_s": null,
+     "frames_in_state": {
+      "OK": 163,
+      "WARN": 12,
+      "ALERT": 125
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.0041,
+     "decider_alert_count": 1,
+     "name": "rules_only"
+    }
+   }
+  },
+  "stress_track": {
+   "input": "module_sg5/fixtures/stress_track.json",
+   "input_is_synthetic": true,
+   "headline": "Built by module_sg5/fixtures/stress_track.py to put each mechanism in a situation where it decides something.",
+   "caveat": "Engineered to provoke, which makes it LESS like a real driver, not more. Every number here is about mechanism behaviour. The two fields set by design rather than derived are stated in the generator's docstring: `drowsy_score` is the fixture's control variable, and `low_coverage` reports a deliberately thin, unfilled window.",
+   "frames": 975,
+   "invalid_frames": 9,
+   "clip_length_s": 32.4667,
+   "closure_onset_s": 14.5,
+   "genuine_spans_s": [
+    [
+     14.0,
+     20.0
+    ],
+    [
+     20.0,
+     24.0
+    ]
+   ],
+   "segments": [
+    {
+     "name": "awake_baseline",
+     "start_s": 0.0,
+     "end_s": 4.0,
+     "targets": "nothing -- false-alarm denominator",
+     "genuine_drowsy_episode": false,
+     "rationale": "Alert driver, score 0.05, full confidence, two ordinary blinks. Any ALERT in here is a nuisance alert and nothing else."
+    },
+    {
+     "name": "boundary_hover",
+     "start_s": 4.0,
+     "end_s": 10.0,
+     "targets": "hysteresis (warn_off vs warn_on)",
+     "genuine_drowsy_episode": false,
+     "rationale": "Score alternates 0.47/0.43 in 0.5 s half-cycles -- slower than min_dwell_s, so the dwell timer cannot absorb it. With the dead band the state settles into WARN and stays; with warn_off == warn_on it flips on every half-cycle."
+    },
+    {
+     "name": "recover_hover",
+     "start_s": 10.0,
+     "end_s": 11.0,
+     "targets": "nothing -- returns every variant to a settled OK",
+     "genuine_drowsy_episode": false,
+     "rationale": "Needed because the variants leave boundary_hover in different states; without it the next segment would measure the carry-over."
+    },
+    {
+     "name": "single_frame_spikes",
+     "start_s": 11.0,
+     "end_s": 14.0,
+     "targets": "dwell timer (min_dwell_s)",
+     "genuine_drowsy_episode": false,
+     "rationale": "Baseline 0.05 with four isolated ONE-frame spikes to 0.95. A dwell timer swallows them; without it each spike is an alarm on an awake driver."
+    },
+    {
+     "name": "genuine_episode",
+     "start_s": 14.0,
+     "end_s": 20.0,
+     "targets": "alert latch (alert_latch_s), and the score path end to end",
+     "genuine_drowsy_episode": true,
+     "rationale": "A real episode: score climbs past alert_on, eyes close for 2.3 s of which SG-4 observes 2.0 s, then the face is lost for 0.3 s (16.50-16.80 s, valid=False, reason='no_valid_observations') while the alarm is live -- entirely inside the latch window, so the latch is the only thing holding the alarm up. Observation resumes with the eyes open: current_closure_s -> 0 while longest_closure_s keeps 2.0 for the rest of the window, exactly as SG-4 reports it. The score then decays through the WARN band to baseline."
+    },
+    {
+     "name": "override_only",
+     "start_s": 20.0,
+     "end_s": 24.0,
+     "targets": "sustained-closure override (closure_override_s)",
+     "genuine_drowsy_episode": true,
+     "rationale": "Eyes shut for 2.5 s while the score is held at 0.50, below alert_on. The window has just turned over, so PERCLOS has not caught up: the override is the only mechanism that can alarm here, and without it nothing does."
+    },
+    {
+     "name": "recover_override",
+     "start_s": 24.0,
+     "end_s": 25.5,
+     "targets": "nothing -- drains the latch and returns every variant to OK",
+     "genuine_drowsy_episode": false,
+     "rationale": "The confidence gate holds the CURRENT state rather than forcing OK, so low_coverage must start from a settled OK or it would measure the leftover WARN from override_only instead of the gate."
+    },
+    {
+     "name": "low_coverage",
+     "start_s": 25.5,
+     "end_s": 29.5,
+     "targets": "confidence gate (min_confidence)",
+     "genuine_drowsy_episode": false,
+     "rationale": "Confidence 0.30 on a 1.2 s unfilled window with PERCLOS 0.80 and a score of 0.80 -- a high score computed from roughly a dozen surviving observations. Thin evidence, not a real event: with the gate there is no escalation, without it there is an alarm."
+    },
+    {
+     "name": "tail_awake",
+     "start_s": 29.5,
+     "end_s": 32.5,
+     "targets": "nothing -- makes the final state observable",
+     "genuine_drowsy_episode": false,
+     "rationale": "Back to baseline so a configuration that never releases its alarm is visible as such instead of being hidden by the clip ending mid-alert."
+    }
+   ],
+   "changed_metrics": {
+    "no_hysteresis": [
+     "transitions",
+     "frames_in_state",
+     "alert_frames_by_segment"
+    ],
+    "no_dwell": [
+     "transitions",
+     "alert_episodes",
+     "first_alert_s",
+     "alert_lag_s",
+     "first_episode_alert_s",
+     "episode_lag_s",
+     "last_alert_cleared_s",
+     "frames_in_state",
+     "false_alarm_frames",
+     "alert_frames_by_segment"
+    ],
+    "no_latch": [
+     "transitions",
+     "alert_episodes",
+     "frames_in_state",
+     "alert_frames_by_segment"
+    ],
+    "no_override": [
+     "transitions",
+     "alert_episodes",
+     "last_alert_cleared_s",
+     "frames_in_state",
+     "alert_frames_by_segment"
+    ],
+    "no_confidence_gate": [
+     "transitions",
+     "alert_episodes",
+     "last_alert_cleared_s",
+     "frames_in_state",
+     "false_alarm_frames",
+     "alert_frames_by_segment"
+    ],
+    "rules_only": [
+     "transitions",
+     "alert_episodes",
+     "first_alert_s",
+     "alert_lag_s",
+     "first_episode_alert_s",
+     "episode_lag_s",
+     "last_alert_cleared_s",
+     "frames_in_state",
+     "false_alarm_frames",
+     "alert_frames_by_segment"
+    ]
+   },
+   "inert_mechanisms": [],
+   "configurations": {
+    "full": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 8,
+     "alert_episodes": 2,
+     "first_alert_s": 15.3333,
+     "first_episode_alert_s": 15.3333,
+     "episode_lag_s": 0.8333,
+     "alert_lag_s": 0.8333,
+     "last_alert_cleared_s": 23.4333,
+     "frames_in_state": {
+      "OK": 575,
+      "WARN": 247,
+      "ALERT": 153
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0037,
+     "latency_p95_ms": 0.0045,
+     "decider_alert_count": 2,
+     "name": "full",
+     "alert_frames_by_segment": {
+      "awake_baseline": 0,
+      "boundary_hover": 0,
+      "recover_hover": 0,
+      "single_frame_spikes": 0,
+      "genuine_episode": 100,
+      "override_only": 53,
+      "recover_override": 0,
+      "low_coverage": 0,
+      "tail_awake": 0
+     }
+    },
+    "no_hysteresis": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.45,
+      "alert_off": 0.7,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 19,
+     "alert_episodes": 2,
+     "first_alert_s": 15.3333,
+     "first_episode_alert_s": 15.3333,
+     "episode_lag_s": 0.8333,
+     "alert_lag_s": 0.8333,
+     "last_alert_cleared_s": 23.4333,
+     "frames_in_state": {
+      "OK": 671,
+      "WARN": 171,
+      "ALERT": 133
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.0042,
+     "decider_alert_count": 2,
+     "name": "no_hysteresis",
+     "alert_frames_by_segment": {
+      "awake_baseline": 0,
+      "boundary_hover": 0,
+      "recover_hover": 0,
+      "single_frame_spikes": 0,
+      "genuine_episode": 80,
+      "override_only": 53,
+      "recover_override": 0,
+      "low_coverage": 0,
+      "tail_awake": 0
+     }
+    },
+    "no_dwell": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.0,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 15,
+     "alert_episodes": 5,
+     "first_alert_s": 11.4,
+     "first_episode_alert_s": 14.0,
+     "episode_lag_s": -0.5,
+     "alert_lag_s": -3.1,
+     "last_alert_cleared_s": 23.1667,
+     "frames_in_state": {
+      "OK": 485,
+      "WARN": 263,
+      "ALERT": 227
+     },
+     "false_alarm_frames": 75,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.0041,
+     "decider_alert_count": 5,
+     "name": "no_dwell",
+     "alert_frames_by_segment": {
+      "awake_baseline": 0,
+      "boundary_hover": 0,
+      "recover_hover": 0,
+      "single_frame_spikes": 75,
+      "genuine_episode": 107,
+      "override_only": 45,
+      "recover_override": 0,
+      "low_coverage": 0,
+      "tail_awake": 0
+     }
+    },
+    "no_latch": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 0.0,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 10,
+     "alert_episodes": 3,
+     "first_alert_s": 15.3333,
+     "first_episode_alert_s": 15.3333,
+     "episode_lag_s": 0.8333,
+     "alert_lag_s": 0.8333,
+     "last_alert_cleared_s": 23.4333,
+     "frames_in_state": {
+      "OK": 597,
+      "WARN": 247,
+      "ALERT": 131
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.0043,
+     "decider_alert_count": 3,
+     "name": "no_latch",
+     "alert_frames_by_segment": {
+      "awake_baseline": 0,
+      "boundary_hover": 0,
+      "recover_hover": 0,
+      "single_frame_spikes": 0,
+      "genuine_episode": 78,
+      "override_only": 53,
+      "recover_override": 0,
+      "low_coverage": 0,
+      "tail_awake": 0
+     }
+    },
+    "no_override": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 999.0,
+      "min_confidence": 0.5
+     },
+     "transitions": 6,
+     "alert_episodes": 1,
+     "first_alert_s": 15.3333,
+     "first_episode_alert_s": 15.3333,
+     "episode_lag_s": 0.8333,
+     "alert_lag_s": 0.8333,
+     "last_alert_cleared_s": 18.6667,
+     "frames_in_state": {
+      "OK": 575,
+      "WARN": 300,
+      "ALERT": 100
+     },
+     "false_alarm_frames": 0,
+     "latency_mean_ms": 0.0037,
+     "latency_p95_ms": 0.0042,
+     "decider_alert_count": 1,
+     "name": "no_override",
+     "alert_frames_by_segment": {
+      "awake_baseline": 0,
+      "boundary_hover": 0,
+      "recover_hover": 0,
+      "single_frame_spikes": 0,
+      "genuine_episode": 100,
+      "override_only": 0,
+      "recover_override": 0,
+      "low_coverage": 0,
+      "tail_awake": 0
+     }
+    },
+    "no_confidence_gate": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.35,
+      "alert_off": 0.55,
+      "min_dwell_s": 0.4,
+      "alert_latch_s": 1.5,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.0
+     },
+     "transitions": 10,
+     "alert_episodes": 3,
+     "first_alert_s": 15.3333,
+     "first_episode_alert_s": 15.3333,
+     "episode_lag_s": 0.8333,
+     "alert_lag_s": 0.8333,
+     "last_alert_cleared_s": 29.9333,
+     "frames_in_state": {
+      "OK": 455,
+      "WARN": 247,
+      "ALERT": 273
+     },
+     "false_alarm_frames": 120,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.0042,
+     "decider_alert_count": 3,
+     "name": "no_confidence_gate",
+     "alert_frames_by_segment": {
+      "awake_baseline": 0,
+      "boundary_hover": 0,
+      "recover_hover": 0,
+      "single_frame_spikes": 0,
+      "genuine_episode": 100,
+      "override_only": 53,
+      "recover_override": 0,
+      "low_coverage": 107,
+      "tail_awake": 13
+     }
+    },
+    "rules_only": {
+     "config": {
+      "warn_on": 0.45,
+      "alert_on": 0.7,
+      "warn_off": 0.45,
+      "alert_off": 0.7,
+      "min_dwell_s": 0.0,
+      "alert_latch_s": 0.0,
+      "closure_override_s": 1.2,
+      "min_confidence": 0.5
+     },
+     "transitions": 30,
+     "alert_episodes": 7,
+     "first_alert_s": 11.4,
+     "first_episode_alert_s": 14.9333,
+     "episode_lag_s": 0.4333,
+     "alert_lag_s": -3.1,
+     "last_alert_cleared_s": 23.0,
+     "frames_in_state": {
+      "OK": 669,
+      "WARN": 192,
+      "ALERT": 114
+     },
+     "false_alarm_frames": 4,
+     "latency_mean_ms": 0.0036,
+     "latency_p95_ms": 0.0042,
+     "decider_alert_count": 7,
+     "name": "rules_only",
+     "alert_frames_by_segment": {
+      "awake_baseline": 0,
+      "boundary_hover": 0,
+      "recover_hover": 0,
+      "single_frame_spikes": 4,
+      "genuine_episode": 70,
+      "override_only": 40,
+      "recover_override": 0,
+      "low_coverage": 0,
+      "tail_awake": 0
+     }
+    }
+   }
+  }
+ }
+}
